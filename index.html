@@ -3,113 +3,113 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPOS v4.0 - Sistema Completo Granero El Canasto</title>
+  <title>SmartPOS v4.0 - Adaptable Multi-Pantalla</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-    body { background-color: #1e272e; color: #333; padding: 10px; height: 100vh; display: flex; flex-direction: column; }
+    body { background-color: #1e272e; color: #333; min-height: 100vh; display: flex; flex-direction: column; padding: 10px; }
 
-    /* Encabezado y Navegación */
-    .header-bar { background: #0abde3; color: white; padding: 8px 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0; }
-    .nav-tabs { background: #222f3e; padding: 8px 15px; display: flex; gap: 8px; border-bottom: 2px solid #0abde3; }
-    .nav-btn { background: #341f97; color: white; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; }
+    /* Header adaptable */
+    .header-bar { background: #0abde3; color: white; padding: 10px 15px; font-weight: bold; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0; gap: 10px; }
+    
+    /* Navegación fluida */
+    .nav-tabs { background: #222f3e; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 2px solid #0abde3; }
+    .nav-btn { background: #341f97; color: white; border: none; padding: 10px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; flex: 1 1 auto; text-align: center; }
     .nav-btn.active { background: #0abde3; color: white; }
 
-    /* Vistas */
+    /* Layout principal flexible */
     .view-panel { display: none; background: #c8d6e5; padding: 10px; border-radius: 0 0 6px 6px; flex: 1; }
-    .view-panel.active { display: flex; gap: 10px; }
+    .view-panel.active { display: flex; flex-direction: column; gap: 10px; }
 
-    /* Layout POS */
-    .left-section { display: flex; flex-direction: column; gap: 10px; flex: 2; }
-    .right-section { background: white; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; flex: 1.1; }
+    @media (min-width: 992px) {
+      .view-panel.active { flex-direction: row; }
+    }
 
-    /* Buscador Express */
+    /* Columnas adaptables */
+    .left-section { display: flex; flex-direction: column; gap: 10px; flex: 2; width: 100%; }
+    .right-section { background: white; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; flex: 1.1; width: 100%; }
+
+    /* Buscador */
     .search-box { display: flex; gap: 10px; background: white; padding: 10px; border-radius: 6px; }
-    .search-input { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border: 2px solid #0abde3; border-radius: 4px; outline: none; }
+    .search-input { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border: 2px solid #0abde3; border-radius: 4px; outline: none; width: 100%; }
     
-    .table-container { background: white; flex: 1; border-radius: 6px; padding: 10px; overflow-y: auto; }
-    table { width: 100%; border-collapse: collapse; }
-    th { background: #576574; color: white; padding: 10px; font-size: 14px; text-align: left; }
+    /* Contenedor de tablas responsivas */
+    .table-container { background: white; border-radius: 6px; padding: 10px; overflow-x: auto; max-height: 350px; }
+    table { width: 100%; border-collapse: collapse; min-width: 450px; }
+    th { background: #576574; color: white; padding: 10px; font-size: 13px; text-align: left; }
     td { padding: 10px; border-bottom: 1px solid #c8d6e5; font-size: 14px; font-weight: 600; }
 
-    /* Atajos */
+    /* Grilla de atajos adaptativa */
     .shortcuts-container { background: white; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
     .shortcuts-title { font-size: 12px; font-weight: bold; color: #576574; text-transform: uppercase; }
-    .grid-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-    .btn-shortcut { background: #f1f2f6; border: 2px solid #576574; padding: 10px 4px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; color: #222f3e; }
+    .grid-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+    .btn-shortcut { background: #f1f2f6; border: 2px solid #576574; padding: 12px 5px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; color: #222f3e; }
     .btn-shortcut span { display: block; font-size: 11px; color: #10ac84; font-weight: 800; margin-top: 2px; }
 
-    /* Panel de Pago */
+    /* Panel de pago */
     .dian-box { background: #f8f9fa; border: 2px dashed #0abde3; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
     .total-display { background: #10ac84; color: white; padding: 12px; border-radius: 6px; text-align: center; }
-    .total-display h1 { font-size: 34px; font-weight: 900; }
+    .total-display h1 { font-size: clamp(24px, 5vw, 36px); font-weight: 900; }
 
-    .pay-input { width: 100%; padding: 10px; font-size: 22px; font-weight: bold; text-align: center; border: 2px solid #10ac84; border-radius: 6px; }
+    .pay-input { width: 100%; padding: 10px; font-size: 20px; font-weight: bold; text-align: center; border: 2px solid #10ac84; border-radius: 6px; }
     .change-display { background: #ee5253; color: white; padding: 10px; border-radius: 6px; text-align: center; margin-top: 10px; }
 
     .btn-cobrar { background: #10ac84; color: white; border: none; width: 100%; padding: 16px; font-size: 18px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; }
     .status-badge { font-size: 11px; background: #27ae60; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 
-    /* Tarjetas de Dashboard / Reportes */
-    .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; width: 100%; margin-bottom: 15px; }
+    /* Tarjetas Dashboard fluidas */
+    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; width: 100%; margin-bottom: 15px; }
     .dash-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #0abde3; }
-    .dash-card h4 { font-size: 12px; color: #576574; text-transform: uppercase; }
-    .dash-card h2 { font-size: 24px; color: #222f3e; margin-top: 5px; }
 
     /* Modal Ticket */
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; }
-    .ticket-box { background: #fff; width: 320px; padding: 15px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-    .ticket-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; padding: 10px; }
+    .ticket-box { background: #fff; width: 100%; max-width: 320px; padding: 15px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 12px; }
   </style>
 </head>
 <body>
 
-  <!-- Encabezado Principal -->
   <div class="header-bar">
     <span>SmartPOS v4.0 — Granero El Canasto</span>
-    <span>Factus API DIAN: <span class="status-badge">ONLINE</span> | Usuario Activo: <strong>Jenny (Cajero)</strong></span>
+    <span>Factus DIAN: <span class="status-badge">ONLINE</span> | Cajero: <strong>Jenny</strong></span>
   </div>
 
-  <!-- Navegación por Módulos -->
   <div class="nav-tabs">
-    <button class="nav-btn active" id="btnTab1" onclick="cambiarTab('pos')">[ F1 ] POS Venta Exprés</button>
+    <button class="nav-btn active" id="btnTab1" onclick="cambiarTab('pos')">[ F1 ] POS Venta</button>
     <button class="nav-btn" id="btnTab2" onclick="cambiarTab('inventario')">[ F2 ] Inventarios</button>
-    <button class="nav-btn" id="btnTab3" onclick="cambiarTab('cierre')">[ F3 ] Cierre de Caja</button>
-    <button class="nav-btn" id="btnTab4" onclick="cambiarTab('usuarios')">[ F4 ] Usuarios & Permisos</button>
-    <button class="nav-btn" id="btnTab5" onclick="cambiarTab('informe')">[ F5 ] Informe de Gestión</button>
+    <button class="nav-btn" id="btnTab3" onclick="cambiarTab('cierre')">[ F3 ] Cierre Caja</button>
+    <button class="nav-btn" id="btnTab4" onclick="cambiarTab('usuarios')">[ F4 ] Usuarios</button>
+    <button class="nav-btn" id="btnTab5" onclick="cambiarTab('informe')">[ F5 ] Informes</button>
   </div>
 
-  <!-- VISTA 1: POS PRINCIPAL -->
+  <!-- VISTA POS -->
   <div id="view-pos" class="view-panel active">
     <div class="left-section">
       <div class="search-box">
-        <input type="text" id="inputBuscar" class="search-input" placeholder="Escanee con la pistola o busque por nombre... [ Enter ]" autofocus onkeydown="mecanismoEscaner(event)">
+        <input type="text" id="inputBuscar" class="search-input" placeholder="Escanee código o busque producto... [ Enter ]" autofocus onkeydown="mecanismoEscaner(event)">
       </div>
 
       <div class="table-container">
         <table id="tablaVenta">
           <thead>
             <tr>
-              <th>Artículo / Producto</th>
+              <th>Artículo</th>
               <th>Cant.</th>
-              <th>P. Unit</th>
+              <th>Precio</th>
               <th>Subtotal</th>
             </tr>
           </thead>
-          <tbody><!-- Productos dinámicos --></tbody>
+          <tbody><!-- Dinámico --></tbody>
         </table>
       </div>
 
       <div class="shortcuts-container">
-        <div class="shortcuts-title">Atajos Rápidos de Granos (1 Clic):</div>
+        <div class="shortcuts-title">Atajos Rápidos de Granos (Táctil / Clic):</div>
         <div class="grid-buttons">
-          <button class="btn-shortcut" onclick="agregarProducto('Arroba Maíz Duro', 14000)">Arroba Maíz Duro <span>$ 14.000</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Bulto Maíz Duro', 130000)">Bulto Maíz Duro <span>$ 130.000</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Kilo Maíz Duro', 3000)">Kilo Maíz Duro <span>$ 3.000</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Media Arroba Maíz', 7000)">Media Arroba Maíz <span>$ 7.000</span></button>
+          <button class="btn-shortcut" onclick="agregarProducto('Arroba Maíz Duro', 14000)">Arroba Maíz <span>$ 14.000</span></button>
+          <button class="btn-shortcut" onclick="agregarProducto('Bulto Maíz Duro', 130000)">Bulto Maíz <span>$ 130.000</span></button>
+          <button class="btn-shortcut" onclick="agregarProducto('Kilo Maíz Duro', 3000)">Kilo Maíz <span>$ 3.000</span></button>
           <button class="btn-shortcut" onclick="agregarProducto('Arroz Arroba', 45000)">Arroz Arroba <span>$ 45.000</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Fríjol Cargamanto Kg', 8500)">Fríjol Cargamanto <span>$ 8.500</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Cubeta Huevos AA', 18000)">Cubeta Huevos <span>$ 18.000</span></button>
-          <button class="btn-shortcut" onclick="agregarProducto('Panela Bulto', 95000)">Panela Bulto <span>$ 95.000</span></button>
+          <button class="btn-shortcut" onclick="agregarProducto('Fríjol Kg', 8500)">Fríjol Kg <span>$ 8.500</span></button>
+          <button class="btn-shortcut" onclick="agregarProducto('Cubeta Huevos', 18000)">Cubeta Huevos <span>$ 18.000</span></button>
         </div>
       </div>
     </div>
@@ -119,14 +119,11 @@
         <div class="dian-box">
           <div style="font-size: 11px; font-weight: bold; color: #0abde3; display: flex; justify-content: space-between;">
             <span>FACTURACIÓN FACTUS</span>
-            <label><input type="checkbox" id="checkDian" onchange="toggleDianInputs()"> Factura Electrónica</label>
+            <label><input type="checkbox" id="checkDian" onchange="toggleDianInputs()"> Elec.</label>
           </div>
           <div id="dianFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px;">
-            <input type="text" id="docCliente" placeholder="Cédula/NIT" value="1020304050" style="padding:4px; font-size:11px;">
-            <input type="text" id="nomCliente" placeholder="Nombre" value="Pedro Pérez" style="padding:4px; font-size:11px;">
-          </div>
-          <div id="posDefaultText" style="font-size: 11px; color: #666; margin-top: 4px;">
-            Emisión: <strong>Ticket POS Consumidor Final</strong>
+            <input type="text" id="docCliente" placeholder="Cédula/NIT" value="1020304050" style="padding:4px; font-size:11px; width:100%;">
+            <input type="text" id="nomCliente" placeholder="Nombre" value="Pedro Pérez" style="padding:4px; font-size:11px; width:100%;">
           </div>
         </div>
 
@@ -150,96 +147,73 @@
     </div>
   </div>
 
-  <!-- VISTA 2: INVENTARIOS -->
+  <!-- VISTA INVENTARIO -->
   <div id="view-inventario" class="view-panel">
     <div style="background: white; width: 100%; border-radius: 6px; padding: 15px;">
-      <h3 style="margin-bottom: 10px;">Gestión de Inventario & Precios</h3>
-      <table>
-        <thead>
-          <tr><th>Código</th><th>Producto</th><th>Categoría</th><th>Stock Actual</th><th>Precio Venta</th><th>Estado</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>7701001</td><td>Maíz Duro (A granel)</td><td>Granos</td><td>120.5 Kg</td><td>$ 3.000 / Kg</td><td><span class="status-badge">NORMAL</span></td></tr>
-          <tr><td>7701002</td><td>Arroz Arroba (12.5Kg)</td><td>Granos</td><td>18 Bultos</td><td>$ 45.000</td><td><span class="status-badge">NORMAL</span></td></tr>
-          <tr><td>7701003</td><td>Fríjol Cargamanto</td><td>Granos</td><td>3.0 Kg</td><td>$ 8.500 / Kg</td><td><span class="status-badge" style="background:#e74c3c;">CRÍTICO</span></td></tr>
-          <tr><td>7701004</td><td>Huevos AA x30</td><td>Víveres</td><td>5 Cubetas</td><td>$ 18.000</td><td><span class="status-badge" style="background:#e67e22;">ALERTA BAJO</span></td></tr>
-        </tbody>
-      </table>
+      <h3 style="margin-bottom: 10px;">Gestión de Inventario</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr><th>Código</th><th>Producto</th><th>Stock</th><th>Precio</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>7701001</td><td>Maíz Duro (Granel)</td><td>120.5 Kg</td><td>$ 3.000 / Kg</td><td><span class="status-badge">NORMAL</span></td></tr>
+            <tr><td>7701002</td><td>Arroz Arroba</td><td>18 Bultos</td><td>$ 45.000</td><td><span class="status-badge">NORMAL</span></td></tr>
+            <tr><td>7701003</td><td>Fríjol Cargamanto</td><td>3.0 Kg</td><td>$ 8.500 / Kg</td><td><span class="status-badge" style="background:#e74c3c;">CRÍTICO</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- VISTA 3: CIERRE DE CAJA -->
+  <!-- VISTA CIERRE CAJA -->
   <div id="view-cierre" class="view-panel">
-    <div style="background: white; width: 100%; border-radius: 6px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div style="background: white; width: 100%; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; gap: 15px;">
       <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px;">
-        <h3 style="border-bottom: 2px solid #0abde3; padding-bottom: 8px; margin-bottom: 12px;">Resumen Teórico del Turno</h3>
-        <p style="margin: 8px 0;">Base Inicial: <strong>$ 100.000</strong></p>
-        <p style="margin: 8px 0;">Ventas Efectivo: <strong id="cierreVentasEfectivo">$ 0</strong></p>
-        <p style="margin: 8px 0;">Egresos Proveedores: <strong style="color:#e74c3c;">-$ 150.000</strong></p>
-        <hr style="margin: 10px 0;">
-        <p style="font-size: 18px; color: #10ac84;">Efectivo Esperado: <strong id="cierreEfectivoEsperado">$ 0</strong></p>
+        <h3>Resumen del Turno</h3>
+        <p>Base Inicial: <strong>$ 100.000</strong></p>
+        <p>Ventas Efectivo: <strong id="cierreVentasEfectivo">$ 0</strong></p>
+        <p>Efectivo Esperado: <strong id="cierreEfectivoEsperado" style="color: #10ac84;">$ 0</strong></p>
       </div>
 
       <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px;">
-        <h3 style="border-bottom: 2px solid #0abde3; padding-bottom: 8px; margin-bottom: 12px;">Conteo Físico</h3>
-        <label style="font-size: 13px; font-weight: bold;">Efectivo Real Contado ($):</label>
+        <h3>Conteo Físico</h3>
         <input type="number" id="inputEfectivoReal" class="pay-input" style="text-align: left; margin: 8px 0;" value="0" oninput="calcularCuadreCierre()">
-        <p style="margin-top: 10px;">Diferencia: <strong id="cierreDiferencia" style="color:#27ae60;">$ 0 [ OK ]</strong></p>
-        <button class="btn-cobrar" style="background: #e74c3c; margin-top: 15px;" onclick="imprimirReporteZ()">EFECTUAR CIERRE E IMPRIMIR REPORTE Z</button>
+        <p>Diferencia: <strong id="cierreDiferencia" style="color:#27ae60;">$ 0 [ OK ]</strong></p>
+        <button class="btn-cobrar" style="background: #e74c3c; margin-top: 15px;" onclick="imprimirReporteZ()">EFECTUAR CIERRE REPORTE Z</button>
       </div>
     </div>
   </div>
 
-  <!-- VISTA 4: USUARIOS Y PERMISOS -->
+  <!-- VISTA USUARIOS -->
   <div id="view-usuarios" class="view-panel">
     <div style="background: white; width: 100%; border-radius: 6px; padding: 15px;">
-      <h3 style="margin-bottom: 15px;">Administración de Usuarios & Rol de Acceso</h3>
-      <table>
-        <thead>
-          <tr><th>Usuario / Cajero</th><th>Rol</th><th>Caja Asignada</th><th>Estado</th><th>Permisos Clave</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Jenny Gómez</td><td>Cajero Vendedor</td><td>Caja #1</td><td><span class="status-badge">ACTIVO</span></td><td>Venta, Cobro, Arqueo Z</td></tr>
-          <tr><td>Don Pedro (Propietario)</td><td>Administrador Total</td><td>Todas</td><td><span class="status-badge">ACTIVO</span></td><td>Acceso Total, Precios, Reportes</td></tr>
-          <tr><td>Carlos Ruiz</td><td>Supervisor Turno</td><td>Caja #2</td><td><span class="status-badge" style="background:#7f8c8d;">INACTIVO</span></td><td>Anulaciones, Egresos, Cierre</td></tr>
-        </tbody>
-      </table>
+      <h3>Administración de Usuarios</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr><th>Usuario</th><th>Rol</th><th>Caja</th><th>Estado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Jenny Gómez</td><td>Cajero</td><td>Caja #1</td><td><span class="status-badge">ACTIVO</span></td></tr>
+            <tr><td>Don Pedro</td><td>Admin</td><td>Todas</td><td><span class="status-badge">ACTIVO</span></td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- VISTA 5: INFORME DE GESTIÓN -->
+  <!-- VISTA INFORME -->
   <div id="view-informe" class="view-panel" style="flex-direction: column;">
     <div class="dashboard-grid">
-      <div class="dash-card" style="border-color: #27ae60;">
-        <h4>Ventas Totales del Día</h4>
+      <div class="dash-card">
+        <h4>Ventas Totales</h4>
         <h2 id="dashVentas">$ 850.000</h2>
       </div>
-      <div class="dash-card" style="border-color: #2980b9;">
-        <h4>Utilidad Neta Estimada</h4>
+      <div class="dash-card">
+        <h4>Utilidad Estimada</h4>
         <h2>$ 215.000</h2>
       </div>
-      <div class="dash-card" style="border-color: #e74c3c;">
-        <h4>Egresos a Proveedores</h4>
-        <h2>$ 150.000</h2>
-      </div>
-      <div class="dash-card" style="border-color: #f39c12;">
-        <h4>Facturas Emitidas DIAN</h4>
-        <h2>28 Documentos</h2>
-      </div>
-    </div>
-
-    <div style="background: white; border-radius: 6px; padding: 15px; flex: 1;">
-      <h3 style="margin-bottom: 10px;">Top 3 Productos Más Vendidos del Mes</h3>
-      <table>
-        <thead>
-          <tr><th>Producto</th><th>Categoría</th><th>Cantidad Vendida</th><th>Total Recaudado</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>Arroz Arroba (12.5Kg)</td><td>Granos</td><td>42 Bultos</td><td>$ 1.890.000</td></tr>
-          <tr><td>Maíz Duro (A granel)</td><td>Granos</td><td>310 Kg</td><td>$ 930.000</td></tr>
-          <tr><td>Huevos AA x30</td><td>Víveres</td><td>35 Cubetas</td><td>$ 630.000</td></tr>
-        </tbody>
-      </table>
     </div>
   </div>
 
@@ -300,7 +274,6 @@
     function toggleDianInputs() {
       const isChecked = document.getElementById('checkDian').checked;
       document.getElementById('dianFields').style.display = isChecked ? 'grid' : 'none';
-      document.getElementById('posDefaultText').style.display = isChecked ? 'none' : 'block';
     }
 
     function procesarCobro() {
@@ -312,21 +285,17 @@
       document.getElementById('dashVentas').innerText = '$ ' + totalAcumuladoTurno.toLocaleString();
 
       let htmlTicket = `
-        <div class="ticket-header">
-          <strong>GRANERO EL CANASTO</strong><br>
-          NIT: 900.123.456-1<br>
-          Ticket POS / Factus API DIAN<br>
-          CUFE: 8fa9d8e7c6b5...
+        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
+          <strong>GRANERO EL CANASTO</strong><br>Ticket POS / Factus DIAN
         </div>`;
       items.forEach(i => {
         htmlTicket += `<div style="display:flex; justify-content:space-between;"><span>1x ${i.nombre}</span><span>$${i.precio.toLocaleString()}</span></div>`;
       });
       htmlTicket += `
-        <hr style="margin: 6px 0; border: none; border-top: 1px dashed #000;">
+        <hr style="margin:5px 0; border:none; border-top:1px dashed #000;">
         <div style="display:flex; justify-content:space-between;"><span>TOTAL:</span><strong>$${total.toLocaleString()}</strong></div>
         <div style="display:flex; justify-content:space-between;"><span>PAGADO:</span><span>$${pagado.toLocaleString()}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>CAMBIO:</span><span>$${(pagado - total).toLocaleString()}</span></div>
-        <div style="text-align:center; font-size:10px; margin-top:8px;">¡Gracias por su compra!</div>`;
+        <div style="display:flex; justify-content:space-between;"><span>CAMBIO:</span><span>$${(pagado - total).toLocaleString()}</span></div>`;
 
       document.getElementById('ticketContenido').innerHTML = htmlTicket;
       document.getElementById('modalTicket').style.display = 'flex';
@@ -359,40 +328,13 @@
       const diff = real - esperado;
 
       const elDiff = document.getElementById('cierreDiferencia');
-      if (diff === 0) {
-        elDiff.innerText = '$ 0 [ CUADRE OK ]';
-        elDiff.style.color = '#27ae60';
-      } else if (diff < 0) {
-        elDiff.innerText = '-$ ' + Math.abs(diff).toLocaleString() + ' [ FALTANTE ]';
-        elDiff.style.color = '#e74c3c';
-      } else {
-        elDiff.innerText = '+$ ' + diff.toLocaleString() + ' [ SOBRANTE ]';
-        elDiff.style.color = '#f39c12';
-      }
+      if (diff === 0) elDiff.innerText = '$ 0 [ OK ]';
+      else if (diff < 0) elDiff.innerText = '-$ ' + Math.abs(diff).toLocaleString() + ' [ FALTANTE ]';
+      else elDiff.innerText = '+$ ' + diff.toLocaleString() + ' [ SOBRANTE ]';
     }
 
     function imprimirReporteZ() {
-      const base = 100000;
-      const egresos = 150000;
-      const esperado = base + totalAcumuladoTurno - egresos;
-      const real = parseFloat(document.getElementById('inputEfectivoReal').value) || 0;
-
-      let htmlReporteZ = `
-        <div class="ticket-header">
-          <strong>*** REPORTE Z (CIERRE DIARIO) ***</strong><br>
-          GRANERO EL CANASTO<br>
-          Caja #1 | Cajero: Jenny<br>
-          Fecha: ${new Date().toLocaleDateString()}
-        </div>
-        <div style="display:flex; justify-content:space-between;"><span>Base Inicial:</span><span>$ ${base.toLocaleString()}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Ventas Turno:</span><span>$ ${totalAcumuladoTurno.toLocaleString()}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Egresos:</span><span>-$ ${egresos.toLocaleString()}</span></div>
-        <hr style="margin: 6px 0; border: none; border-top: 1px dashed #000;">
-        <div style="display:flex; justify-content:space-between;"><span>Efectivo Esperado:</span><strong>$ ${esperado.toLocaleString()}</strong></div>
-        <div style="display:flex; justify-content:space-between;"><span>Efectivo Real:</span><strong>$ ${real.toLocaleString()}</strong></div>
-        <div style="display:flex; justify-content:space-between;"><span>Diferencia:</span><strong>$ ${(real - esperado).toLocaleString()}</strong></div>
-        <div style="text-align:center; font-size:10px; margin-top:10px; font-weight:bold;">CAJA CERRADA Y BLOQUEADA</div>`;
-
+      let htmlReporteZ = `<div style="text-align:center;"><strong>*** REPORTE Z ***</strong><br>GRANERO EL CANASTO<br>Caja CERRADA</div>`;
       document.getElementById('ticketContenido').innerHTML = htmlReporteZ;
       document.getElementById('modalTicket').style.display = 'flex';
     }
