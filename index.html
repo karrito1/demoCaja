@@ -1,783 +1,1914 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SmartPOS v4.0 - Adaptable Multi-Pantalla</title>
-  <style>
-    * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; }
-    body { background-color: #1e272e; color: #333; min-height: 100vh; display: flex; flex-direction: column; padding: 10px; }
-    .header-bar { background: #0abde3; color: white; padding: 10px 15px; font-weight: bold; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; border-radius: 6px 6px 0 0; gap: 10px; }
-    .nav-tabs { background: #222f3e; padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 2px solid #0abde3; }
-    .nav-btn { background: #341f97; color: white; border: none; padding: 10px 14px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px; flex: 1 1 auto; text-align: center; }
-    .nav-btn.active { background: #0abde3; }
-    .view-panel { display: none; background: #c8d6e5; padding: 10px; border-radius: 0 0 6px 6px; flex: 1; }
-    .view-panel.active { display: flex; flex-direction: column; gap: 10px; }
-    @media (min-width: 992px) { #view-pos.active { flex-direction: row; } }
-    .left-section { display: flex; flex-direction: column; gap: 10px; flex: 2; width: 100%; }
-    .right-section { background: white; border-radius: 6px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; flex: 1.1; width: 100%; }
-    .card { background: white; border-radius: 6px; padding: 15px; width: 100%; }
-    .search-box { display: flex; gap: 10px; background: white; padding: 10px; border-radius: 6px; }
-    .search-input { flex: 1; padding: 12px; font-size: 16px; font-weight: bold; border: 2px solid #0abde3; border-radius: 4px; outline: none; width: 100%; }
-    .table-container { background: white; border-radius: 6px; padding: 10px; overflow-x: auto; max-height: 350px; overflow-y: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 450px; }
-    th { background: #576574; color: white; padding: 10px; font-size: 13px; text-align: left; }
-    td { padding: 10px; border-bottom: 1px solid #c8d6e5; font-size: 14px; font-weight: 600; }
-    .shortcuts-container { background: white; padding: 10px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px; }
-    .shortcuts-title { font-size: 12px; font-weight: bold; color: #576574; text-transform: uppercase; }
-    .grid-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
-    .btn-shortcut { background: #f1f2f6; border: 2px solid #576574; padding: 12px 5px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; color: #222f3e; }
-    .btn-shortcut span { display: block; font-size: 11px; color: #10ac84; font-weight: 800; margin-top: 2px; }
-    .dian-box { background: #f8f9fa; border: 2px dashed #0abde3; padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-    .total-display { background: #10ac84; color: white; padding: 12px; border-radius: 6px; text-align: center; }
-    .total-display h1 { font-size: clamp(24px, 5vw, 36px); font-weight: 900; }
-    .pay-input { width: 100%; padding: 10px; font-size: 20px; font-weight: bold; text-align: center; border: 2px solid #10ac84; border-radius: 6px; }
-    .change-display { background: #ee5253; color: white; padding: 10px; border-radius: 6px; text-align: center; margin-top: 10px; }
-    .btn-cobrar { background: #10ac84; color: white; border: none; width: 100%; padding: 16px; font-size: 18px; font-weight: 900; border-radius: 6px; cursor: pointer; margin-top: 10px; }
-    .status-badge { font-size: 11px; background: #27ae60; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
-    .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; width: 100%; }
-    .dash-card { background: white; padding: 15px; border-radius: 6px; border-left: 5px solid #0abde3; }
-    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; justify-content: center; align-items: center; padding: 10px; }
-    .ticket-box { background: #fff; width: 100%; max-width: 320px; padding: 15px; border-radius: 4px; font-family: 'Courier New', Courier, monospace; font-size: 12px; }
-    /* Inventario */
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
-    .form-grid label { font-size: 12px; font-weight: bold; color: #576574; }
-    .form-grid input, .form-grid select { width: 100%; padding: 8px; border: 2px solid #c8d6e5; border-radius: 4px; font-size: 14px; margin-top: 2px; }
-    .btn { background: #0abde3; color: white; border: none; padding: 10px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-    .btn.gris { background: #576574; }
-    .mini { background: #f1f2f6; border: 1px solid #576574; border-radius: 4px; padding: 4px 8px; font-weight: bold; cursor: pointer; font-size: 12px; }
-    .qty { width: 80px; padding: 4px; font-weight: bold; }
-    #login { position: fixed; inset: 0; background: #1e272e; display: flex; justify-content: center; align-items: center; padding: 10px; z-index: 50; }
-    .login-box { background: #fff; padding: 24px; border-radius: 8px; width: 100%; max-width: 320px; }
-    .login-box input { width: 100%; padding: 10px; border: 2px solid #c8d6e5; border-radius: 4px; font-size: 15px; margin-top: 2px; }
-    .login-box label { font-size: 12px; font-weight: bold; color: #576574; display: block; margin-top: 8px; }
-    #printArea { display: none; }
-    @media print {
-      body.print-inf > #printArea { display: block !important; color: #000; background: #fff; padding: 8px; font-size: 12px; }
-      body.print-inf > #modalTicket { display: none !important; }
-      #printArea table { min-width: 0; } #printArea th { background: #fff; color: #000; border-bottom: 2px solid #000; }
-    }
-    @media print { body > *:not(#modalTicket) { display: none !important; } #modalTicket { position: static; background: none; display: block !important; } }
-  </style>
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartPOS v4.0 - Adaptable Multi-Pantalla</title>
+    <style>
+      :root {
+        --bg: #f1f4f7;
+        --surface: #ffffff;
+        --ink: #1b2430;
+        --muted: #66758a;
+        --line: #e2e8ef;
+        --navy: #16202c;
+        --brand: #0f9d8a;
+        --brand-dark: #0b7a6b;
+        --brand-soft: #e2f5f2;
+        --danger: #e5484d;
+        --radius: 12px;
+        --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 4px 14px rgba(16, 24, 40, 0.06);
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          "Segoe UI",
+          system-ui,
+          -apple-system,
+          Roboto,
+          Arial,
+          sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+      button,
+      input,
+      select,
+      textarea {
+        font-family: inherit;
+      }
+      :focus-visible {
+        outline: 3px solid rgba(15, 157, 138, 0.45);
+        outline-offset: 2px;
+      }
 
-  <div id="login">
-    <div class="login-box">
-      <h2 style="margin-bottom:12px;">SmartPOS — Ingresar</h2>
-      <label>Usuario<input id="lUser" autocomplete="off"></label>
-      <label>Contraseña<input id="lClave" type="password" onkeydown="if(event.key==='Enter')entrar()"></label>
-      <p id="lError" style="color:#e74c3c;font-size:13px;min-height:18px;"></p>
-      <button class="btn" style="width:100%;" onclick="entrar()">Entrar</button>
-      <p style="font-size:11px;color:#576574;margin-top:10px;">Prueba: jenny / 1234 (cajero) · pedro / admin123 (admin)</p>
+      /* Cabecera y pestañas */
+      .header-bar {
+        background: var(--navy);
+        color: #fff;
+        padding: 12px 18px;
+        font-weight: 700;
+        font-size: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: var(--radius) var(--radius) 0 0;
+        gap: 10px;
+      }
+      .nav-tabs {
+        background: var(--surface);
+        padding: 6px 8px 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        border-bottom: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+      .nav-btn {
+        background: transparent;
+        color: var(--muted);
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 12px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+        flex: 1 1 auto;
+        text-align: center;
+        transition:
+          color 0.15s,
+          background 0.15s;
+      }
+      .nav-btn:hover {
+        color: var(--ink);
+        background: #f6f8fa;
+      }
+      .nav-btn.active {
+        color: var(--brand-dark);
+        border-bottom-color: var(--brand);
+        background: var(--brand-soft);
+      }
+
+      /* Paneles */
+      .view-panel {
+        display: none;
+        background: transparent;
+        padding: 14px 0 0;
+        flex: 1;
+      }
+      .view-panel.active {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      @media (min-width: 992px) {
+        #view-pos.active {
+          flex-direction: row;
+          align-items: flex-start;
+        }
+        .right-section {
+          position: sticky;
+          top: 12px;
+        }
+      }
+      .left-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        flex: 2;
+        width: 100%;
+        min-width: 0;
+      }
+      .right-section {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        flex: 1.1;
+        width: 100%;
+      }
+      .card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 18px;
+        width: 100%;
+      }
+      .card h3 {
+        font-size: 16px;
+        margin-bottom: 4px;
+      }
+
+      /* Búsqueda */
+      .search-box {
+        display: flex;
+        gap: 10px;
+        background: var(--surface);
+        padding: 10px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+      }
+      .search-input {
+        flex: 1;
+        padding: 14px 16px;
+        font-size: 16px;
+        font-weight: 600;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        outline: none;
+        width: 100%;
+        background: #fafbfc;
+        transition:
+          border-color 0.15s,
+          box-shadow 0.15s;
+      }
+      .search-input:focus {
+        border-color: var(--brand);
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.15);
+      }
+
+      /* Tablas */
+      .table-container {
+        background: var(--surface);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: auto;
+        max-height: 350px;
+      }
+      #view-pos .table-container {
+        max-height: max(240px, calc(100vh - 470px));
+      }
+      .card .table-container {
+        box-shadow: none;
+        border: 1px solid var(--line);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 450px;
+      }
+      th {
+        background: #f6f8fa;
+        color: var(--muted);
+        padding: 11px 12px;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        text-align: left;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        border-bottom: 1px solid var(--line);
+      }
+      td {
+        padding: 11px 12px;
+        border-bottom: 1px solid var(--line);
+        font-size: 14px;
+        font-weight: 500;
+      }
+      tbody tr:hover {
+        background: #f9fbfc;
+      }
+      .qty {
+        width: 84px;
+        padding: 6px 8px;
+        font-weight: 700;
+        border: 2px solid var(--line);
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      /* Atajos */
+      .shortcuts-container {
+        background: var(--surface);
+        padding: 14px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .shortcuts-title {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .grid-buttons {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+      }
+      .btn-shortcut {
+        background: #fff;
+        border: 1.5px solid var(--line);
+        padding: 14px 8px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        text-align: center;
+        color: var(--ink);
+        transition:
+          transform 0.12s,
+          border-color 0.12s,
+          box-shadow 0.12s;
+      }
+      .btn-shortcut:hover {
+        border-color: var(--brand);
+        box-shadow: 0 4px 12px rgba(15, 157, 138, 0.18);
+        transform: translateY(-2px);
+      }
+      .btn-shortcut:active {
+        transform: translateY(0);
+        background: var(--brand-soft);
+      }
+      .btn-shortcut span {
+        display: block;
+        font-size: 13px;
+        color: var(--brand-dark);
+        font-weight: 800;
+        margin-top: 4px;
+      }
+
+      /* Panel de cobro */
+      .dian-box {
+        background: #f6f8fa;
+        border: 1px solid var(--line);
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 12px;
+      }
+      .total-display {
+        background: linear-gradient(135deg, var(--brand), var(--brand-dark));
+        color: #fff;
+        padding: 18px 14px;
+        border-radius: 12px;
+        text-align: center;
+        box-shadow: 0 6px 18px rgba(15, 157, 138, 0.3);
+      }
+      .total-display h1 {
+        font-size: clamp(30px, 5vw, 44px);
+        font-weight: 900;
+        letter-spacing: -0.02em;
+      }
+      .pay-input {
+        width: 100%;
+        padding: 12px;
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        background: #fff;
+      }
+      .pay-input:focus {
+        border-color: var(--brand);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.15);
+      }
+      .change-display {
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
+        margin-top: 12px;
+        border: 1px solid #bfe8e2;
+      }
+      .change-display h2 {
+        font-size: 26px;
+        font-weight: 800;
+      }
+      .btn-cobrar {
+        background: var(--brand);
+        color: #fff;
+        border: none;
+        width: 100%;
+        padding: 18px;
+        font-size: 17px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        border-radius: 12px;
+        cursor: pointer;
+        margin-top: 14px;
+        box-shadow: 0 6px 16px rgba(15, 157, 138, 0.35);
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .btn-cobrar:hover {
+        background: var(--brand-dark);
+      }
+      .btn-cobrar:active {
+        transform: scale(0.985);
+      }
+
+      /* Badges y tarjetas de resumen */
+      .status-badge {
+        font-size: 11px;
+        background: #16a34a;
+        color: #fff;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        display: inline-block;
+      }
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 12px;
+        width: 100%;
+      }
+      .dash-card {
+        background: var(--surface);
+        padding: 16px 18px;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        border-left: 4px solid var(--brand);
+      }
+      .dash-card h4 {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 6px;
+      }
+      .dash-card h2 {
+        font-size: 26px;
+        font-weight: 800;
+      }
+
+      /* Formularios y botones */
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 12px;
+        margin: 14px 0;
+      }
+      .form-grid label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .form-grid input,
+      .form-grid select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid var(--line);
+        border-radius: 8px;
+        font-size: 14px;
+        margin-top: 4px;
+        background: #fff;
+        color: var(--ink);
+      }
+      .form-grid input:focus,
+      .form-grid select:focus {
+        border-color: var(--brand);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.15);
+      }
+      .btn {
+        background: var(--brand);
+        color: #fff;
+        border: none;
+        padding: 11px 18px;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        margin: 2px 6px 2px 0;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .btn:hover {
+        background: var(--brand-dark);
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn.gris {
+        background: #fff;
+        color: var(--ink);
+        border: 1.5px solid var(--line);
+      }
+      .btn.gris:hover {
+        background: #f1f4f7;
+      }
+      .mini {
+        background: #fff;
+        border: 1.5px solid var(--line);
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 12px;
+        color: var(--ink);
+        transition:
+          background 0.12s,
+          border-color 0.12s;
+      }
+      .mini:hover {
+        border-color: var(--brand);
+        background: var(--brand-soft);
+        color: var(--brand-dark);
+      }
+      .header-bar .mini {
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
+        color: #fff;
+      }
+      .header-bar .mini:hover {
+        background: rgba(255, 255, 255, 0.22);
+      }
+
+      /* Modales y ticket */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        backdrop-filter: blur(3px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+        z-index: 100;
+      }
+      .ticket-box {
+        background: #fff;
+        width: 100%;
+        max-width: 340px;
+        max-height: 92vh;
+        overflow: auto;
+        padding: 18px;
+        border-radius: 14px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 12px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      }
+      .ticket-box > button {
+        background: var(--brand);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+      }
+      .ticket-box > button:last-of-type {
+        background: #eef1f5;
+        color: var(--ink);
+      }
+
+      /* Login */
+      #login {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at 30% 20%, #23405a, var(--navy) 60%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 12px;
+        z-index: 200;
+      }
+      .login-box {
+        background: #fff;
+        padding: 30px 26px;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 360px;
+        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
+      }
+      .login-box h2 {
+        margin-bottom: 14px;
+      }
+      .login-box label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        display: block;
+        margin-top: 10px;
+      }
+      .login-box input {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--line);
+        border-radius: 8px;
+        font-size: 15px;
+        margin-top: 4px;
+      }
+      .login-box input:focus {
+        border-color: var(--brand);
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.15);
+      }
+      .login-box .btn {
+        padding: 13px;
+        font-size: 15px;
+        margin-top: 4px;
+      }
+
+      /* Táctil y movimiento reducido */
+      @media (pointer: coarse) {
+        .btn,
+        .mini,
+        .nav-btn {
+          min-height: 44px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+
+      /* Impresión (sin cambios) */
+      #printArea {
+        display: none;
+      }
+      @media print {
+        body.print-inf > #printArea {
+          display: block !important;
+          color: #000;
+          background: #fff;
+          padding: 8px;
+          font-size: 12px;
+        }
+        body.print-inf > #modalTicket {
+          display: none !important;
+        }
+        #printArea table {
+          min-width: 0;
+        }
+        #printArea th {
+          background: #fff;
+          color: #000;
+          border-bottom: 2px solid #000;
+        }
+      }
+      @media print {
+        body > *:not(#modalTicket) {
+          display: none !important;
+        }
+        #modalTicket {
+          position: static;
+          background: none;
+          display: block !important;
+        }
+      }
+      /* Pestañas con icono y tecla */
+      .nav-btn .ico {
+        margin-right: 4px;
+      }
+      kbd {
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        background: #eef1f5;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-bottom-width: 2px;
+        border-radius: 5px;
+        padding: 1px 6px;
+        margin-left: 6px;
+      }
+      .nav-btn.active kbd {
+        background: #fff;
+        color: var(--brand-dark);
+        border-color: #bfe8e2;
+      }
+      @media (max-width: 640px) {
+        kbd {
+          display: none;
+        }
+        .nav-btn {
+          font-size: 12px;
+          padding: 10px 8px;
+        }
+      }
+
+      /* Estados vacíos (sin tocar JS): aparecen cuando el tbody no tiene filas */
+      .table-container:has(tbody:empty)::after {
+        content: "Sin registros todavía";
+        display: block;
+        padding: 36px 16px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      #view-pos .table-container:has(tbody:empty)::after {
+        content: "🛒  Escanee un código o toque un atajo para empezar la venta";
+      }
+      #view-inventario .table-container:has(tbody:empty)::after {
+        content: "📦  Aún no hay productos. Cree el primero arriba.";
+      }
+      #view-facturas .table-container:has(tbody:empty)::after {
+        content: "🏛️  Todavía no hay facturas electrónicas";
+      }
+
+      /* Filas inactivas y de stock crítico más legibles */
+      tbody tr[style*="opacity"] {
+        background: #fafafa;
+      }
+      tbody tr[style*="opacity"] td {
+        text-decoration: line-through;
+        text-decoration-color: rgba(0, 0, 0, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="login">
+      <div class="login-box">
+        <h2 style="margin-bottom: 12px">SmartPOS — Ingresar</h2>
+        <label>Usuario<input id="lUser" autocomplete="off" /></label>
+        <label>Contraseña<input id="lClave" type="password" onkeydown="if (event.key === 'Enter') entrar();" /></label>
+        <p id="lError" style="color: #e74c3c; font-size: 13px; min-height: 18px"></p>
+        <button class="btn" style="width: 100%" onclick="entrar()">Entrar</button>
+        <p style="font-size: 11px; color: #576574; margin-top: 10px">Prueba: jenny / 1234 (cajero) · pedro / admin123 (admin)</p>
+      </div>
     </div>
-  </div>
 
-  <div class="header-bar">
-    <span id="nombreNegocio">SmartPOS v4.0</span>
-    <span><span id="feBadge" class="status-badge" style="cursor:pointer;" onclick="alternarInternet()" title="Clic para simular un corte de internet"></span> | Usuario: <strong id="nombreCajero"></strong> <button class="mini" onclick="salir()">Salir</button></span>
-  </div>
-
-  <div class="nav-tabs">
-    <button class="nav-btn active" id="btnTab1" onclick="cambiarTab('pos')">[ F1 ] POS Venta</button>
-    <button class="nav-btn" id="btnTab2" onclick="cambiarTab('inventario')">[ F2 ] Inventarios</button>
-    <button class="nav-btn" id="btnTab3" onclick="cambiarTab('cierre')">[ F3 ] Cierre Caja</button>
-    <button class="nav-btn" id="btnTab4" onclick="cambiarTab('usuarios')">[ F4 ] Usuarios</button>
-    <button class="nav-btn" id="btnTab5" onclick="cambiarTab('informe')">[ F5 ] Informes</button>
-    <button class="nav-btn" id="btnTab6" onclick="cambiarTab('facturas')">[ F6 ] Facturas DIAN</button>
-  </div>
-
-  <!-- VISTA POS -->
-  <div id="view-pos" class="view-panel active">
-    <div class="left-section">
-      <div class="search-box">
-        <input type="text" id="inputBuscar" class="search-input" placeholder="Escanee código o escriba el nombre... [ Enter ]" autofocus onkeydown="mecanismoEscaner(event)">
-      </div>
-      <div class="table-container">
-        <table id="tablaVenta">
-          <thead><tr><th>Artículo</th><th>Cant.</th><th>Precio</th><th>Subtotal</th><th></th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="shortcuts-container">
-        <div class="shortcuts-title">Atajos rápidos (se arman desde el inventario, marca "Atajo" al crear el producto):</div>
-        <div class="grid-buttons" id="gridAtajos"></div>
-      </div>
+    <div class="header-bar">
+      <span id="nombreNegocio">SmartPOS v4.0</span>
+      <span
+        ><span
+          id="feBadge"
+          class="status-badge"
+          style="cursor: pointer"
+          onclick="alternarInternet()"
+          title="Clic para simular un corte de internet"
+        ></span>
+        | Usuario: <strong id="nombreCajero"></strong> <button class="mini" onclick="salir()">Salir</button></span
+      >
     </div>
 
-    <div class="right-section">
-      <div>
-        <div class="dian-box">
-          <div style="font-size: 11px; font-weight: bold; color: #0abde3; display: flex; justify-content: space-between;">
-            <span>FACTURACIÓN FACTUS</span>
-            <label><input type="checkbox" id="checkDian" onchange="toggleDianInputs()"> Elec.</label>
+    <div class="nav-tabs">
+      <button class="nav-btn active" id="btnTab1" onclick="cambiarTab('pos')"><span class="ico">🛒</span> POS Venta <kbd>F1</kbd></button>
+      <button class="nav-btn" id="btnTab2" onclick="cambiarTab('inventario')"><span class="ico">📦</span> Inventarios <kbd>F2</kbd></button>
+      <button class="nav-btn" id="btnTab3" onclick="cambiarTab('cierre')"><span class="ico">🧾</span> Cierre Caja <kbd>F3</kbd></button>
+      <button class="nav-btn" id="btnTab4" onclick="cambiarTab('usuarios')"><span class="ico">👥</span> Usuarios <kbd>F4</kbd></button>
+      <button class="nav-btn" id="btnTab5" onclick="cambiarTab('informe')"><span class="ico">📊</span> Informes <kbd>F5</kbd></button>
+      <button class="nav-btn" id="btnTab6" onclick="cambiarTab('facturas')"><span class="ico">🏛️</span> Facturas DIAN <kbd>F6</kbd></button>
+    </div>
+
+    <!-- VISTA POS -->
+    <div id="view-pos" class="view-panel active">
+      <div class="left-section">
+        <div class="search-box">
+          <input
+            type="text"
+            id="inputBuscar"
+            class="search-input"
+            placeholder="Escanee código o escriba el nombre... [ Enter ]"
+            autofocus
+            onkeydown="mecanismoEscaner(event)"
+          />
+        </div>
+        <div class="table-container">
+          <table id="tablaVenta">
+            <thead>
+              <tr>
+                <th>Artículo</th>
+                <th>Cant.</th>
+                <th>Precio</th>
+                <th>Subtotal</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="shortcuts-container">
+          <div class="shortcuts-title">Atajos rápidos (se arman desde el inventario, marca "Atajo" al crear el producto):</div>
+          <div class="grid-buttons" id="gridAtajos"></div>
+        </div>
+      </div>
+
+      <div class="right-section">
+        <div>
+          <div class="dian-box">
+            <div style="font-size: 11px; font-weight: bold; color: #0abde3; display: flex; justify-content: space-between">
+              <span>FACTURACIÓN FACTUS</span>
+              <label><input type="checkbox" id="checkDian" onchange="toggleDianInputs()" /> Elec.</label>
+            </div>
+            <div id="dianFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px">
+              <input type="text" id="docCliente" placeholder="Cédula/NIT" style="padding: 4px; font-size: 11px; width: 100%" />
+              <input type="text" id="nomCliente" placeholder="Nombre" style="padding: 4px; font-size: 11px; width: 100%" />
+              <div style="grid-column: 1/-1; font-size: 10px; color: #576574">
+                Demo Factus: un documento de menos de 5 dígitos simula un rechazo de la DIAN.
+              </div>
+            </div>
           </div>
-          <div id="dianFields" style="display: none; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 6px;">
-            <input type="text" id="docCliente" placeholder="Cédula/NIT" style="padding:4px; font-size:11px; width:100%;">
-            <input type="text" id="nomCliente" placeholder="Nombre" style="padding:4px; font-size:11px; width:100%;">
-            <div style="grid-column:1/-1;font-size:10px;color:#576574;">Demo Factus: un documento de menos de 5 dígitos simula un rechazo de la DIAN.</div>
+          <div class="total-display">
+            <label style="font-size: 12px; text-transform: uppercase">Total A Cobrar</label>
+            <h1 id="totalMonto">$ 0</h1>
+          </div>
+          <div style="margin-top: 10px">
+            <label style="font-size: 12px; font-weight: bold">Medio de pago:</label>
+            <select id="medioPago" class="pay-input" style="font-size: 16px; margin-bottom: 8px" onchange="calcularVueltos()">
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Nequi / Daviplata</option>
+            </select>
+            <label style="font-size: 12px; font-weight: bold">Efectivo Recibido ($):</label>
+            <input type="number" id="efectivoRecibido" class="pay-input" value="0" oninput="calcularVueltos()" />
+          </div>
+          <div class="change-display">
+            <label style="font-size: 12px; text-transform: uppercase">Cambio / Vueltos:</label>
+            <h2 id="vueltosMonto">$ 0</h2>
           </div>
         </div>
-        <div class="total-display">
-          <label style="font-size: 12px; text-transform: uppercase;">Total A Cobrar</label>
-          <h1 id="totalMonto">$ 0</h1>
+        <button class="btn-cobrar" onclick="procesarCobro()">[ F12 ] COBRAR E IMPRIMIR</button>
+      </div>
+    </div>
+
+    <!-- VISTA INVENTARIO -->
+    <div id="view-inventario" class="view-panel">
+      <div class="card">
+        <h3 id="formTitulo">Nuevo producto</h3>
+        <div class="form-grid">
+          <label>Código de barras<input id="fCodigo" /></label>
+          <label>Nombre<input id="fNombre" /></label>
+          <label
+            >Unidad<select id="fUnidad">
+              <option>Und</option>
+              <option>Kg</option>
+              <option>Arroba</option>
+              <option>Bulto</option>
+              <option>Cubeta</option>
+              <option>Litro</option>
+            </select></label
+          >
+          <label>Precio de venta<input id="fPrecio" type="number" min="0" /></label>
+          <label>Costo<input id="fCosto" type="number" min="0" /></label>
+          <label>Stock<input id="fStock" type="number" min="0" step="any" /></label>
+          <label>Stock mínimo<input id="fMinimo" type="number" min="0" step="any" /></label>
+          <label
+            >IVA<select id="fIva">
+              <option value="0">0% (excluido/exento)</option>
+              <option value="5">5%</option>
+              <option value="19">19%</option>
+            </select></label
+          >
+          <label style="display: flex; align-items: center; gap: 6px"
+            ><input id="fAtajo" type="checkbox" style="width: auto" /> Atajo en POS</label
+          >
         </div>
-        <div style="margin-top: 10px;">
-          <label style="font-size: 12px; font-weight: bold;">Medio de pago:</label>
-          <select id="medioPago" class="pay-input" style="font-size:16px;margin-bottom:8px;" onchange="calcularVueltos()"><option>Efectivo</option><option>Tarjeta</option><option>Nequi / Daviplata</option></select>
-          <label style="font-size: 12px; font-weight: bold;">Efectivo Recibido ($):</label>
-          <input type="number" id="efectivoRecibido" class="pay-input" value="0" oninput="calcularVueltos()">
+        <button class="btn" onclick="guardarProducto()">Guardar producto</button>
+        <button class="btn gris" onclick="limpiarForm()">Cancelar / Limpiar</button>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px">
+          <input
+            id="invBuscar"
+            class="search-input"
+            style="min-width: 200px"
+            placeholder="Buscar por nombre o código"
+            oninput="renderInv()"
+          />
+          <button class="btn gris" onclick="descargarProductos()">Descargar productos</button>
         </div>
-        <div class="change-display">
-          <label style="font-size: 12px; text-transform: uppercase;">Cambio / Vueltos:</label>
-          <h2 id="vueltosMonto">$ 0</h2>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th>Stock</th>
+                <th>Precio</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
         </div>
       </div>
-      <button class="btn-cobrar" onclick="procesarCobro()">[ F12 ] COBRAR E IMPRIMIR</button>
-    </div>
-  </div>
-
-  <!-- VISTA INVENTARIO -->
-  <div id="view-inventario" class="view-panel">
-    <div class="card">
-      <h3 id="formTitulo">Nuevo producto</h3>
-      <div class="form-grid">
-        <label>Código de barras<input id="fCodigo"></label>
-        <label>Nombre<input id="fNombre"></label>
-        <label>Unidad<select id="fUnidad"><option>Und</option><option>Kg</option><option>Arroba</option><option>Bulto</option><option>Cubeta</option><option>Litro</option></select></label>
-        <label>Precio de venta<input id="fPrecio" type="number" min="0"></label>
-        <label>Costo<input id="fCosto" type="number" min="0"></label>
-        <label>Stock<input id="fStock" type="number" min="0" step="any"></label>
-        <label>Stock mínimo<input id="fMinimo" type="number" min="0" step="any"></label>
-        <label>IVA<select id="fIva"><option value="0">0% (excluido/exento)</option><option value="5">5%</option><option value="19">19%</option></select></label>
-        <label style="display:flex;align-items:center;gap:6px;"><input id="fAtajo" type="checkbox" style="width:auto;"> Atajo en POS</label>
-      </div>
-      <button class="btn" onclick="guardarProducto()">Guardar producto</button>
-      <button class="btn gris" onclick="limpiarForm()">Cancelar / Limpiar</button>
     </div>
 
-    <div class="card">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-        <input id="invBuscar" class="search-input" style="min-width:200px;" placeholder="Buscar por nombre o código" oninput="renderInv()">
-        <button class="btn gris" onclick="descargarProductos()">Descargar productos</button>
-      </div>
-      <div class="table-container">
-        <table>
-          <thead><tr><th>Código</th><th>Producto</th><th>Stock</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="invBody"></tbody>
-        </table>
+    <!-- VISTA CIERRE CAJA -->
+    <div id="view-cierre" class="view-panel">
+      <div class="card" style="display: flex; flex-direction: column; gap: 15px">
+        <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px">
+          <h3>Resumen del Turno</h3>
+          <p>Base Inicial: <strong id="cierreBase">$ 0</strong></p>
+          <p>Ventas del turno: <strong id="cierreNumVentas">0</strong></p>
+          <p>Ventas Efectivo: <strong id="cierreVentasEfectivo">$ 0</strong></p>
+          <p>Ventas Tarjeta / Nequi: <strong id="cierreVentasOtros">$ 0</strong></p>
+          <p>Efectivo Esperado: <strong id="cierreEfectivoEsperado" style="color: #10ac84">$ 0</strong></p>
+        </div>
+        <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 6px">
+          <h3>Conteo Físico</h3>
+          <input
+            type="number"
+            id="inputEfectivoReal"
+            class="pay-input"
+            style="text-align: left; margin: 8px 0"
+            value="0"
+            oninput="calcularCuadreCierre()"
+          />
+          <p>Diferencia: <strong id="cierreDiferencia">$ 0 [ OK ]</strong></p>
+          <button class="btn-cobrar" style="background: #e74c3c; margin-top: 15px" onclick="imprimirReporteZ()">
+            EFECTUAR CIERRE REPORTE Z
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- VISTA CIERRE CAJA -->
-  <div id="view-cierre" class="view-panel">
-    <div class="card" style="display:flex;flex-direction:column;gap:15px;">
-      <div style="background:#f8f9fa;border:1px solid #ddd;padding:15px;border-radius:6px;">
-        <h3>Resumen del Turno</h3>
-        <p>Base Inicial: <strong id="cierreBase">$ 0</strong></p>
-        <p>Ventas del turno: <strong id="cierreNumVentas">0</strong></p>
-        <p>Ventas Efectivo: <strong id="cierreVentasEfectivo">$ 0</strong></p>
-        <p>Ventas Tarjeta / Nequi: <strong id="cierreVentasOtros">$ 0</strong></p>
-        <p>Efectivo Esperado: <strong id="cierreEfectivoEsperado" style="color:#10ac84;">$ 0</strong></p>
+    <!-- VISTA USUARIOS -->
+    <div id="view-usuarios" class="view-panel">
+      <div class="card">
+        <h3 id="uTitulo">Nuevo usuario</h3>
+        <div class="form-grid">
+          <label>Nombre completo<input id="uNombre" /></label>
+          <label>Usuario (para entrar)<input id="uUsuario" autocomplete="off" /></label>
+          <label>Contraseña<input id="uClave" type="password" autocomplete="new-password" /></label>
+          <label
+            >Rol<select id="uRol">
+              <option>Cajero</option>
+              <option>Admin</option>
+            </select></label
+          >
+          <label
+            >Caja<select id="uCaja">
+              <option>Caja #1</option>
+              <option>Caja #2</option>
+              <option>Todas</option>
+            </select></label
+          >
+        </div>
+        <button class="btn" onclick="guardarUsuario()">Guardar usuario</button>
+        <button class="btn gris" onclick="limpiarFormUsuario()">Cancelar / Limpiar</button>
       </div>
-      <div style="background:#f8f9fa;border:1px solid #ddd;padding:15px;border-radius:6px;">
-        <h3>Conteo Físico</h3>
-        <input type="number" id="inputEfectivoReal" class="pay-input" style="text-align:left;margin:8px 0;" value="0" oninput="calcularCuadreCierre()">
-        <p>Diferencia: <strong id="cierreDiferencia">$ 0 [ OK ]</strong></p>
-        <button class="btn-cobrar" style="background:#e74c3c;margin-top:15px;" onclick="imprimirReporteZ()">EFECTUAR CIERRE REPORTE Z</button>
+      <div class="card">
+        <h3>Usuarios</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Usuario</th>
+                <th>Rol</th>
+                <th>Caja</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="usuariosBody"></tbody>
+          </table>
+        </div>
+        <p style="font-size: 12px; color: #576574; margin-top: 8px">
+          Cajero: solo POS y Cierre de caja (de sus propias ventas). Admin: todo.
+        </p>
       </div>
     </div>
-  </div>
 
-  <!-- VISTA USUARIOS -->
-  <div id="view-usuarios" class="view-panel">
-    <div class="card">
-      <h3 id="uTitulo">Nuevo usuario</h3>
-      <div class="form-grid">
-        <label>Nombre completo<input id="uNombre"></label>
-        <label>Usuario (para entrar)<input id="uUsuario" autocomplete="off"></label>
-        <label>Contraseña<input id="uClave" type="password" autocomplete="new-password"></label>
-        <label>Rol<select id="uRol"><option>Cajero</option><option>Admin</option></select></label>
-        <label>Caja<select id="uCaja"><option>Caja #1</option><option>Caja #2</option><option>Todas</option></select></label>
+    <!-- VISTA INFORME -->
+    <div id="view-informe" class="view-panel">
+      <div class="card">
+        <div class="form-grid">
+          <label
+            >Periodo<select id="iPer" onchange="renderInforme()">
+              <option value="d">Por día</option>
+              <option value="m">Por mes</option>
+              <option value="y">Por año</option>
+            </select></label
+          >
+          <label>Fecha<input type="date" id="iFecha" onchange="renderInforme()" /></label>
+          <label
+            >Caja<select id="iCaja" onchange="renderInforme()">
+              <option value="">Todas</option>
+              <option>Caja #1</option>
+              <option>Caja #2</option>
+            </select></label
+          >
+          <label>Cajero<select id="iUser" onchange="renderInforme()"></select></label>
+        </div>
+        <button class="btn" onclick="imprimirInforme()">Imprimir informe</button>
+        <button class="btn gris" onclick="descargarCSV()">Descargar CSV</button>
       </div>
-      <button class="btn" onclick="guardarUsuario()">Guardar usuario</button>
-      <button class="btn gris" onclick="limpiarFormUsuario()">Cancelar / Limpiar</button>
-    </div>
-    <div class="card">
-      <h3>Usuarios</h3>
-      <div class="table-container">
-        <table>
-          <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Caja</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="usuariosBody"></tbody>
-        </table>
+      <div class="dashboard-grid">
+        <div class="dash-card">
+          <h4>Ventas Totales</h4>
+          <h2 id="dashVentas">$ 0</h2>
+        </div>
+        <div class="dash-card">
+          <h4>IVA generado</h4>
+          <h2 id="dashIva">$ 0</h2>
+        </div>
+        <div class="dash-card">
+          <h4>Utilidad Estimada</h4>
+          <h2 id="dashUtilidad">$ 0</h2>
+        </div>
+        <div class="dash-card">
+          <h4>Tickets emitidos</h4>
+          <h2 id="dashTickets">0</h2>
+        </div>
       </div>
-      <p style="font-size:12px;color:#576574;margin-top:8px;">Cajero: solo POS y Cierre de caja (de sus propias ventas). Admin: todo.</p>
-    </div>
-  </div>
-
-  <!-- VISTA INFORME -->
-  <div id="view-informe" class="view-panel">
-    <div class="card">
-      <div class="form-grid">
-        <label>Periodo<select id="iPer" onchange="renderInforme()"><option value="d">Por día</option><option value="m">Por mes</option><option value="y">Por año</option></select></label>
-        <label>Fecha<input type="date" id="iFecha" onchange="renderInforme()"></label>
-        <label>Caja<select id="iCaja" onchange="renderInforme()"><option value="">Todas</option><option>Caja #1</option><option>Caja #2</option></select></label>
-        <label>Cajero<select id="iUser" onchange="renderInforme()"></select></label>
-      </div>
-      <button class="btn" onclick="imprimirInforme()">Imprimir informe</button>
-      <button class="btn gris" onclick="descargarCSV()">Descargar CSV</button>
-    </div>
-    <div class="dashboard-grid">
-      <div class="dash-card"><h4>Ventas Totales</h4><h2 id="dashVentas">$ 0</h2></div>
-      <div class="dash-card"><h4>IVA generado</h4><h2 id="dashIva">$ 0</h2></div>
-      <div class="dash-card"><h4>Utilidad Estimada</h4><h2 id="dashUtilidad">$ 0</h2></div>
-      <div class="dash-card"><h4>Tickets emitidos</h4><h2 id="dashTickets">0</h2></div>
-    </div>
-    <div class="card" id="infDetalle"></div>
-    <div class="card">
-      <h3>Últimas ventas</h3>
-      <div class="table-container">
-        <table>
-          <thead><tr><th>Nº</th><th>Fecha</th><th>Tipo</th><th>Cajero</th><th>Total</th></tr></thead>
-          <tbody id="ventasBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div id="printArea"></div>
-
-  <!-- VISTA FACTURAS DIAN -->
-  <div id="view-facturas" class="view-panel">
-    <div class="dashboard-grid">
-      <div class="dash-card" style="border-left-color:#27ae60;"><h4>Validadas por la DIAN</h4><h2 id="feOk">0</h2></div>
-      <div class="dash-card" style="border-left-color:#e67e22;"><h4>Pendientes</h4><h2 id="fePend">0</h2></div>
-      <div class="dash-card" style="border-left-color:#e74c3c;"><h4>Rechazadas</h4><h2 id="feRech">0</h2></div>
-    </div>
-    <div class="card">
-      <p id="feConfig" style="font-size:13px;margin-bottom:10px;"></p>
-      <button class="btn" onclick="reintentarPendientes()">Reintentar pendientes</button>
-      <button class="btn gris" onclick="alternarInternet()">Cortar / restablecer internet</button>
-      <p style="font-size:12px;color:#576574;margin-top:8px;">Demo: corte el internet, cobre una factura electrónica y quedará Pendiente. Al restablecer, se envía sola.</p>
-    </div>
-    <div class="card">
-      <div class="table-container">
-        <table style="min-width:760px;">
-          <thead><tr><th>Fecha</th><th>Venta</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Nº factura</th><th>CUFE</th><th>Acciones</th></tr></thead>
-          <tbody id="feBody"></tbody>
-        </table>
+      <div class="card" id="infDetalle"></div>
+      <div class="card">
+        <h3>Últimas ventas</h3>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Nº</th>
+                <th>Fecha</th>
+                <th>Tipo</th>
+                <th>Cajero</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="ventasBody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
-  </div>
+    <div id="printArea"></div>
 
-  <div id="modalFE" class="modal-overlay">
-    <div class="ticket-box" style="max-width:520px;">
-      <strong>Respuesta de Factus (simulada)</strong>
-      <pre id="feJson" style="white-space:pre-wrap;word-break:break-all;font-size:11px;margin-top:8px;max-height:60vh;overflow:auto;"></pre>
-      <button style="width:100%;padding:8px;margin-top:8px;cursor:pointer;font-weight:bold;" onclick="$('modalFE').style.display='none'">[ CERRAR ]</button>
+    <!-- VISTA FACTURAS DIAN -->
+    <div id="view-facturas" class="view-panel">
+      <div class="dashboard-grid">
+        <div class="dash-card" style="border-left-color: #27ae60">
+          <h4>Validadas por la DIAN</h4>
+          <h2 id="feOk">0</h2>
+        </div>
+        <div class="dash-card" style="border-left-color: #e67e22">
+          <h4>Pendientes</h4>
+          <h2 id="fePend">0</h2>
+        </div>
+        <div class="dash-card" style="border-left-color: #e74c3c">
+          <h4>Rechazadas</h4>
+          <h2 id="feRech">0</h2>
+        </div>
+      </div>
+      <div class="card">
+        <p id="feConfig" style="font-size: 13px; margin-bottom: 10px"></p>
+        <button class="btn" onclick="reintentarPendientes()">Reintentar pendientes</button>
+        <button class="btn gris" onclick="alternarInternet()">Cortar / restablecer internet</button>
+        <p style="font-size: 12px; color: #576574; margin-top: 8px">
+          Demo: corte el internet, cobre una factura electrónica y quedará Pendiente. Al restablecer, se envía sola.
+        </p>
+      </div>
+      <div class="card">
+        <div class="table-container">
+          <table style="min-width: 760px">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Venta</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Nº factura</th>
+                <th>CUFE</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="feBody"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- MODAL TICKET -->
-  <div id="modalTicket" class="modal-overlay">
-    <div class="ticket-box">
-      <div id="ticketContenido"></div>
-      <button style="width:100%;padding:8px;margin-top:10px;cursor:pointer;font-weight:bold;" onclick="window.print()">[ IMPRIMIR ]</button>
-      <button style="width:100%;padding:8px;margin-top:6px;cursor:pointer;font-weight:bold;" onclick="cerrarTicket()">[ CERRAR Y NUEVA VENTA ]</button>
+    <div id="modalFE" class="modal-overlay">
+      <div class="ticket-box" style="max-width: 520px">
+        <strong>Respuesta de Factus (simulada)</strong>
+        <pre
+          id="feJson"
+          style="white-space: pre-wrap; word-break: break-all; font-size: 11px; margin-top: 8px; max-height: 60vh; overflow: auto"
+        ></pre>
+        <button
+          style="width: 100%; padding: 8px; margin-top: 8px; cursor: pointer; font-weight: bold"
+          onclick="$('modalFE').style.display = 'none'"
+        >
+          [ CERRAR ]
+        </button>
+      </div>
     </div>
-  </div>
 
-  <script>
-    /* ===== BASE DE DATOS SIMULADA =====
+    <!-- MODAL TICKET -->
+    <div id="modalTicket" class="modal-overlay">
+      <div class="ticket-box">
+        <div id="ticketContenido"></div>
+        <button style="width: 100%; padding: 8px; margin-top: 10px; cursor: pointer; font-weight: bold" onclick="window.print()">
+          [ IMPRIMIR ]
+        </button>
+        <button style="width: 100%; padding: 8px; margin-top: 6px; cursor: pointer; font-weight: bold" onclick="cerrarTicket()">
+          [ CERRAR Y NUEVA VENTA ]
+        </button>
+      </div>
+    </div>
+
+    <script>
+      /* ===== BASE DE DATOS SIMULADA =====
        Los datos iniciales viven en el archivo db.json (misma carpeta que este HTML).
        Las ventas y los cambios se guardan en el navegador (localStorage).
        Si edita db.json a mano, suba el número de "version" para que se recargue. */
-    let DB = null;
-    const guardar = () => localStorage.setItem('smartpos_db', JSON.stringify(DB));
+      let DB = null;
+      const guardar = () => localStorage.setItem("smartpos_db", JSON.stringify(DB));
 
-    async function cargarDB() {
-      let archivo = null, guardado = null;
-      try { const r = await fetch('db.json', { cache: 'no-store' }); archivo = await r.json(); } catch (e) {}
-      try { guardado = JSON.parse(localStorage.getItem('smartpos_db')); } catch (e) {}
-      if (archivo && (!guardado || guardado.version !== archivo.version)) {
-        DB = archivo; DB.ventas = guardado && Array.isArray(guardado.ventas) ? guardado.ventas : (archivo.ventas || []);
-        if (guardado && guardado.config && guardado.config.factus && DB.config.factus) DB.config.factus.siguiente = Math.max(DB.config.factus.siguiente, guardado.config.factus.siguiente);
+      async function cargarDB() {
+        let archivo = null,
+          guardado = null;
+        try {
+          const r = await fetch("db.json", { cache: "no-store" });
+          archivo = await r.json();
+        } catch (e) {}
+        try {
+          guardado = JSON.parse(localStorage.getItem("smartpos_db"));
+        } catch (e) {}
+        if (archivo && (!guardado || guardado.version !== archivo.version)) {
+          DB = archivo;
+          DB.ventas = guardado && Array.isArray(guardado.ventas) ? guardado.ventas : archivo.ventas || [];
+          if (guardado && guardado.config && guardado.config.factus && DB.config.factus)
+            DB.config.factus.siguiente = Math.max(DB.config.factus.siguiente, guardado.config.factus.siguiente);
+          guardar();
+        } else if (guardado && Array.isArray(guardado.productos)) {
+          DB = guardado;
+        } else {
+          alert('No se pudo leer db.json. Abra la carpeta en VS Code y use "Open with Live Server" (no doble clic al archivo).');
+          DB = { version: 0, config: { negocio: "SmartPOS", cajero: "", base: 0 }, productos: [], ventas: [], usuarios: [] };
+        }
+        init();
+      }
+
+      const $ = (id) => document.getElementById(id);
+      const $$ = (n) => "$ " + Math.round(n).toLocaleString("es-CO");
+      const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+      let items = [],
+        editId = null;
+      const total = () => items.reduce((a, i) => a + i.precio * i.cant, 0);
+      const MESES = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre",
+      ];
+      /* El precio de venta ya incluye IVA: base = precio / (1 + tarifa). */
+      const z = () => ({ ex: 0, b5: 0, i5: 0, b19: 0, i19: 0 });
+      const tx = (it, o) => {
+        it.forEach((l) => {
+          const g = l.precio * l.cant,
+            r = l.iva || 0,
+            b = g / (1 + r / 100);
+          if (r === 5) {
+            o.b5 += b;
+            o.i5 += g - b;
+          } else if (r === 19) {
+            o.b19 += b;
+            o.i19 += g - b;
+          } else o.ex += g;
+        });
+        return o;
+      };
+
+      /* ===== NAVEGACIÓN ===== */
+      const hs = (t) => {
+        let h = 5381;
+        for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0;
+        return h.toString(16);
+      };
+      let sesion = null,
+        editUserId = null;
+      const esAdmin = () => !!sesion && sesion.rol === "Admin";
+
+      function entrar() {
+        const u = $("lUser").value.trim().toLowerCase(),
+          c = $("lClave").value;
+        const x = DB.usuarios.find((y) => y.activo && y.usuario.toLowerCase() === u && y.clave === hs(c));
+        if (!x) {
+          $("lError").innerText = "Usuario o contraseña incorrectos.";
+          return;
+        }
+        sesion = x;
+        sessionStorage.setItem("smartpos_sesion", x.id);
+        aplicarSesion();
+      }
+      function aplicarSesion() {
+        $("login").style.display = "none";
+        $("lError").innerText = "";
+        $("lUser").value = $("lClave").value = "";
+        $("nombreCajero").innerText = sesion.nombre + " (" + sesion.rol + ")";
+        ["btnTab2", "btnTab4", "btnTab5", "btnTab6"].forEach((b) => ($(b).style.display = esAdmin() ? "" : "none"));
+        cambiarTab("pos");
+      }
+      function salir() {
+        sesion = null;
+        sessionStorage.removeItem("smartpos_sesion");
+        items = [];
+        actualizarTabla();
+        $("login").style.display = "flex";
+        $("lUser").focus();
+      }
+
+      function cambiarTab(tab) {
+        if (!sesion || (!esAdmin() && ["inventario", "usuarios", "informe", "facturas"].includes(tab))) return;
+        document.querySelectorAll(".view-panel").forEach((p) => p.classList.remove("active"));
+        document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+        $("view-" + tab).classList.add("active");
+        $(
+          { pos: "btnTab1", inventario: "btnTab2", cierre: "btnTab3", usuarios: "btnTab4", informe: "btnTab5", facturas: "btnTab6" }[tab],
+        ).classList.add("active");
+        if (tab === "inventario") renderInv();
+        if (tab === "cierre") actualizarCierreView();
+        if (tab === "usuarios") renderUsuarios();
+        if (tab === "informe") renderInforme();
+        if (tab === "facturas") renderFacturas();
+        if (tab === "pos") $("inputBuscar").focus();
+      }
+
+      /* ===== POS ===== */
+      function renderAtajos() {
+        $("gridAtajos").innerHTML =
+          DB.productos
+            .filter((p) => p.activo && p.atajo)
+            .map(
+              (p) =>
+                `<button class="btn-shortcut" onclick="agregarProducto(${p.id})">${esc(p.nombre)}<span>${$$(p.precio)}</span></button>`,
+            )
+            .join("") || '<span style="font-size:12px;color:#576574;">No hay atajos. Marque "Atajo en POS" en un producto.</span>';
+      }
+
+      function agregarProducto(id) {
+        const p = DB.productos.find((x) => x.id === id && x.activo);
+        if (!p) return;
+        const linea = items.find((i) => i.id === id);
+        const nueva = (linea ? linea.cant : 0) + 1;
+        if (nueva > p.stock) return alert("Stock insuficiente. Quedan " + p.stock + " " + p.unidad + " de " + p.nombre);
+        if (linea) linea.cant = nueva;
+        else items.push({ id: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, iva: p.iva || 0, cant: 1 });
+        actualizarTabla();
+      }
+
+      function mecanismoEscaner(e) {
+        if (e.key !== "Enter") return;
+        const v = e.target.value.trim().toLowerCase();
+        if (!v) return;
+        const p =
+          DB.productos.find((x) => x.activo && x.codigo.toLowerCase() === v) ||
+          DB.productos.find((x) => x.activo && x.nombre.toLowerCase().includes(v));
+        e.target.value = "";
+        if (!p) return alert("Producto no encontrado: " + v);
+        agregarProducto(p.id);
+      }
+
+      function cambiarCant(idx, val) {
+        const l = items[idx],
+          p = DB.productos.find((x) => x.id === l.id),
+          c = parseFloat(val) || 0;
+        if (c <= 0) items.splice(idx, 1);
+        else if (c > p.stock) alert("Stock insuficiente. Quedan " + p.stock + " " + p.unidad);
+        else l.cant = c;
+        actualizarTabla();
+      }
+
+      function actualizarTabla() {
+        $("tablaVenta").querySelector("tbody").innerHTML = items
+          .map(
+            (i, idx) =>
+              `<tr><td>${esc(i.nombre)}</td><td><input class="qty" type="number" step="any" min="0" value="${i.cant}" onchange="cambiarCant(${idx}, this.value)"></td><td>${$$(i.precio)}</td><td>${$$(i.precio * i.cant)}</td><td><button class="mini" onclick="cambiarCant(${idx}, 0)">✕</button></td></tr>`,
+          )
+          .join("");
+        $("totalMonto").innerText = $$(total());
+        calcularVueltos();
+      }
+
+      function calcularVueltos() {
+        const efe = $("medioPago").value === "Efectivo";
+        $("efectivoRecibido").disabled = !efe;
+        if (!efe) $("efectivoRecibido").value = total();
+        const v = (parseFloat($("efectivoRecibido").value) || 0) - total();
+        $("vueltosMonto").innerText = $$(v > 0 ? v : 0);
+      }
+
+      function toggleDianInputs() {
+        $("dianFields").style.display = $("checkDian").checked ? "grid" : "none";
+      }
+
+      function procesarCobro() {
+        if (!sesion) return;
+        if (!items.length) return alert("Cargue al menos un producto.");
+        const t = total(),
+          medio = $("medioPago").value,
+          pagado = medio === "Efectivo" ? parseFloat($("efectivoRecibido").value) || 0 : t,
+          dian = $("checkDian").checked;
+        if (pagado < t) return alert("El dinero ingresado es menor al total.");
+        if (dian && (!$("docCliente").value.trim() || !$("nomCliente").value.trim()))
+          return alert("Factura electrónica: falta cédula/NIT o nombre del cliente.");
+        const n = "V-" + String(DB.ventas.length + 1).padStart(5, "0");
+        const v = {
+          n,
+          fecha: new Date().toISOString(),
+          items: items.map((i) => ({ ...i })),
+          total: t,
+          pagado,
+          medio,
+          dian,
+          cliente: dian ? { doc: $("docCliente").value.trim(), nombre: $("nomCliente").value.trim() } : null,
+          cerrada: false,
+          usuario: sesion.usuario,
+          cajero: sesion.nombre,
+          caja: sesion.caja,
+        };
+        if (dian) v.fe = { estado: "Pendiente", intentos: 0 };
+        DB.ventas.push(v);
+        items.forEach((i) => {
+          DB.productos.find((p) => p.id === i.id).stock -= i.cant;
+        });
         guardar();
-      } else if (guardado && Array.isArray(guardado.productos)) {
-        DB = guardado;
-      } else {
-        alert('No se pudo leer db.json. Abra la carpeta en VS Code y use "Open with Live Server" (no doble clic al archivo).');
-        DB = { version: 0, config: { negocio: 'SmartPOS', cajero: '', base: 0 }, productos: [], ventas: [], usuarios: [] };
+        mostrarTicket(v);
+        if (dian) enviarFactus(v);
       }
-      init();
-    }
 
-    const $ = id => document.getElementById(id);
-    const $$ = n => '$ ' + Math.round(n).toLocaleString('es-CO');
-    const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    let items = [], editId = null;
-    const total = () => items.reduce((a, i) => a + i.precio * i.cant, 0);
-    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-    /* El precio de venta ya incluye IVA: base = precio / (1 + tarifa). */
-    const z = () => ({ ex: 0, b5: 0, i5: 0, b19: 0, i19: 0 });
-    const tx = (it, o) => { it.forEach(l => { const g = l.precio * l.cant, r = l.iva || 0, b = g / (1 + r / 100); if (r === 5) { o.b5 += b; o.i5 += g - b; } else if (r === 19) { o.b19 += b; o.i19 += g - b; } else o.ex += g; }); return o; };
-
-    /* ===== NAVEGACIÓN ===== */
-    const hs = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return h.toString(16); };
-    let sesion = null, editUserId = null;
-    const esAdmin = () => !!sesion && sesion.rol === 'Admin';
-
-    function entrar() {
-      const u = $('lUser').value.trim().toLowerCase(), c = $('lClave').value;
-      const x = DB.usuarios.find(y => y.activo && y.usuario.toLowerCase() === u && y.clave === hs(c));
-      if (!x) { $('lError').innerText = 'Usuario o contraseña incorrectos.'; return; }
-      sesion = x; sessionStorage.setItem('smartpos_sesion', x.id); aplicarSesion();
-    }
-    function aplicarSesion() {
-      $('login').style.display = 'none'; $('lError').innerText = ''; $('lUser').value = $('lClave').value = '';
-      $('nombreCajero').innerText = sesion.nombre + ' (' + sesion.rol + ')';
-      ['btnTab2', 'btnTab4', 'btnTab5', 'btnTab6'].forEach(b => $(b).style.display = esAdmin() ? '' : 'none');
-      cambiarTab('pos');
-    }
-    function salir() {
-      sesion = null; sessionStorage.removeItem('smartpos_sesion'); items = []; actualizarTabla();
-      $('login').style.display = 'flex'; $('lUser').focus();
-    }
-
-    function cambiarTab(tab) {
-      if (!sesion || (!esAdmin() && ['inventario', 'usuarios', 'informe', 'facturas'].includes(tab))) return;
-      document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-      $('view-' + tab).classList.add('active');
-      $({ pos: 'btnTab1', inventario: 'btnTab2', cierre: 'btnTab3', usuarios: 'btnTab4', informe: 'btnTab5', facturas: 'btnTab6' }[tab]).classList.add('active');
-      if (tab === 'inventario') renderInv();
-      if (tab === 'cierre') actualizarCierreView();
-      if (tab === 'usuarios') renderUsuarios();
-      if (tab === 'informe') renderInforme();
-      if (tab === 'facturas') renderFacturas();
-      if (tab === 'pos') $('inputBuscar').focus();
-    }
-
-    /* ===== POS ===== */
-    function renderAtajos() {
-      $('gridAtajos').innerHTML = DB.productos.filter(p => p.activo && p.atajo).map(p =>
-        `<button class="btn-shortcut" onclick="agregarProducto(${p.id})">${esc(p.nombre)}<span>${$$(p.precio)}</span></button>`).join('')
-        || '<span style="font-size:12px;color:#576574;">No hay atajos. Marque "Atajo en POS" en un producto.</span>';
-    }
-
-    function agregarProducto(id) {
-      const p = DB.productos.find(x => x.id === id && x.activo);
-      if (!p) return;
-      const linea = items.find(i => i.id === id);
-      const nueva = (linea ? linea.cant : 0) + 1;
-      if (nueva > p.stock) return alert('Stock insuficiente. Quedan ' + p.stock + ' ' + p.unidad + ' de ' + p.nombre);
-      if (linea) linea.cant = nueva;
-      else items.push({ id: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, iva: p.iva || 0, cant: 1 });
-      actualizarTabla();
-    }
-
-    function mecanismoEscaner(e) {
-      if (e.key !== 'Enter') return;
-      const v = e.target.value.trim().toLowerCase();
-      if (!v) return;
-      const p = DB.productos.find(x => x.activo && x.codigo.toLowerCase() === v) ||
-                DB.productos.find(x => x.activo && x.nombre.toLowerCase().includes(v));
-      e.target.value = '';
-      if (!p) return alert('Producto no encontrado: ' + v);
-      agregarProducto(p.id);
-    }
-
-    function cambiarCant(idx, val) {
-      const l = items[idx], p = DB.productos.find(x => x.id === l.id), c = parseFloat(val) || 0;
-      if (c <= 0) items.splice(idx, 1);
-      else if (c > p.stock) alert('Stock insuficiente. Quedan ' + p.stock + ' ' + p.unidad);
-      else l.cant = c;
-      actualizarTabla();
-    }
-
-    function actualizarTabla() {
-      $('tablaVenta').querySelector('tbody').innerHTML = items.map((i, idx) =>
-        `<tr><td>${esc(i.nombre)}</td><td><input class="qty" type="number" step="any" min="0" value="${i.cant}" onchange="cambiarCant(${idx}, this.value)"></td><td>${$$(i.precio)}</td><td>${$$(i.precio * i.cant)}</td><td><button class="mini" onclick="cambiarCant(${idx}, 0)">✕</button></td></tr>`).join('');
-      $('totalMonto').innerText = $$(total());
-      calcularVueltos();
-    }
-
-    function calcularVueltos() {
-      const efe = $('medioPago').value === 'Efectivo';
-      $('efectivoRecibido').disabled = !efe; if (!efe) $('efectivoRecibido').value = total();
-      const v = (parseFloat($('efectivoRecibido').value) || 0) - total();
-      $('vueltosMonto').innerText = $$(v > 0 ? v : 0);
-    }
-
-    function toggleDianInputs() { $('dianFields').style.display = $('checkDian').checked ? 'grid' : 'none'; }
-
-    function procesarCobro() {
-      if (!sesion) return;
-      if (!items.length) return alert('Cargue al menos un producto.');
-      const t = total(), medio = $('medioPago').value, pagado = medio === 'Efectivo' ? (parseFloat($('efectivoRecibido').value) || 0) : t, dian = $('checkDian').checked;
-      if (pagado < t) return alert('El dinero ingresado es menor al total.');
-      if (dian && (!$('docCliente').value.trim() || !$('nomCliente').value.trim())) return alert('Factura electrónica: falta cédula/NIT o nombre del cliente.');
-      const n = 'V-' + String(DB.ventas.length + 1).padStart(5, '0');
-      const v = { n, fecha: new Date().toISOString(), items: items.map(i => ({ ...i })), total: t, pagado, medio, dian,
-        cliente: dian ? { doc: $('docCliente').value.trim(), nombre: $('nomCliente').value.trim() } : null,
-        cerrada: false, usuario: sesion.usuario, cajero: sesion.nombre, caja: sesion.caja };
-      if (dian) v.fe = { estado: 'Pendiente', intentos: 0 };
-      DB.ventas.push(v);
-      items.forEach(i => { DB.productos.find(p => p.id === i.id).stock -= i.cant; });
-      guardar(); mostrarTicket(v);
-      if (dian) enviarFactus(v);
-    }
-
-    /* ===== TICKET ===== */
-    function qrSvg(seed) {
-      const N = 25; let bits = '', r = '';
-      for (const ch of seed) bits += parseInt(ch, 16).toString(2).padStart(4, '0');
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-        const fx = x < 7 || x >= N - 7, fy = y < 7 || y >= N - 7;
-        let on;
-        if (fx && fy && !(x >= N - 7 && y >= N - 7)) {
-          const lx = x < 7 ? x : x - (N - 7), ly = y < 7 ? y : y - (N - 7);
-          on = lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4);
-        } else on = bits[(y * N + x) % bits.length] === '1';
-        if (on) r += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+      /* ===== TICKET ===== */
+      function qrSvg(seed) {
+        const N = 25;
+        let bits = "",
+          r = "";
+        for (const ch of seed) bits += parseInt(ch, 16).toString(2).padStart(4, "0");
+        for (let y = 0; y < N; y++)
+          for (let x = 0; x < N; x++) {
+            const fx = x < 7 || x >= N - 7,
+              fy = y < 7 || y >= N - 7;
+            let on;
+            if (fx && fy && !(x >= N - 7 && y >= N - 7)) {
+              const lx = x < 7 ? x : x - (N - 7),
+                ly = y < 7 ? y : y - (N - 7);
+              on = lx === 0 || lx === 6 || ly === 0 || ly === 6 || (lx >= 2 && lx <= 4 && ly >= 2 && ly <= 4);
+            } else on = bits[(y * N + x) % bits.length] === "1";
+            if (on) r += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
+          }
+        return `<svg viewBox="0 0 ${N} ${N}" width="110" height="110" shape-rendering="crispEdges" style="display:block;margin:6px auto;background:#fff;"><g fill="#000">${r}</g></svg>`;
       }
-      return `<svg viewBox="0 0 ${N} ${N}" width="110" height="110" shape-rendering="crispEdges" style="display:block;margin:6px auto;background:#fff;"><g fill="#000">${r}</g></svg>`;
-    }
 
-    function feBloque(v) {
-      const fe = v.fe || {}, cab = '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;"><div style="word-break:break-all;font-size:11px;">';
-      if (fe.estado === 'Validada') return cab + `<strong>Factura Nº ${fe.numero}</strong><br>Validada por la DIAN<br>${new Date(fe.fechaValidacion).toLocaleString('es-CO')}<br>CUFE:<br>${fe.cufe}${qrSvg(fe.cufe)}<div style="text-align:center;font-size:10px;">QR simulado (demo)</div></div>`;
-      if (fe.estado === 'Enviando') return cab + '📡 Enviando a Factus / DIAN…</div>';
-      if (fe.estado === 'Rechazada') return cab + `✖ <strong>Rechazada por la DIAN</strong><br>${esc(fe.error)}<br>Corrija el dato en la pestaña Facturas DIAN.</div>`;
-      return cab + `⏳ <strong>Pendiente de envío a la DIAN</strong><br>${Factus.online ? 'Reintentando…' : 'Sin internet: se enviará automáticamente al volver la conexión.'}</div>`;
-    }
+      function feBloque(v) {
+        const fe = v.fe || {},
+          cab = '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;"><div style="word-break:break-all;font-size:11px;">';
+        if (fe.estado === "Validada")
+          return (
+            cab +
+            `<strong>Factura Nº ${fe.numero}</strong><br>Validada por la DIAN<br>${new Date(fe.fechaValidacion).toLocaleString("es-CO")}<br>CUFE:<br>${fe.cufe}${qrSvg(fe.cufe)}<div style="text-align:center;font-size:10px;">QR simulado (demo)</div></div>`
+          );
+        if (fe.estado === "Enviando") return cab + "📡 Enviando a Factus / DIAN…</div>";
+        if (fe.estado === "Rechazada")
+          return cab + `✖ <strong>Rechazada por la DIAN</strong><br>${esc(fe.error)}<br>Corrija el dato en la pestaña Facturas DIAN.</div>`;
+        return (
+          cab +
+          `⏳ <strong>Pendiente de envío a la DIAN</strong><br>${Factus.online ? "Reintentando…" : "Sin internet: se enviará automáticamente al volver la conexión."}</div>`
+        );
+      }
 
-    function ticketHTML(v) {
-      const L = (a, b) => `<div style="display:flex;justify-content:space-between;"><span>${a}</span><span>${b}</span></div>`;
-      let h = `<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:5px;margin-bottom:5px;"><strong>${esc(DB.config.negocio).toUpperCase()}</strong><br>${v.dian ? 'FACTURA ELECTRÓNICA DE VENTA' : 'Ticket POS'}<br>${v.n} · ${new Date(v.fecha).toLocaleString('es-CO')}<br>Cajero: ${esc(v.cajero || '—')}</div>`;
-      if (v.dian) h += `<div>Cliente: ${esc(v.cliente.nombre)} · ${esc(v.cliente.doc)}</div>`;
-      v.items.forEach(i => { h += L(`${i.cant}x ${esc(i.nombre)}`, $$(i.precio * i.cant)); });
-      const o = tx(v.items, z());
-      h += '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;">';
-      if (o.ex) h += L('Excluido/0%:', $$(o.ex));
-      if (o.b5) h += L('Base 5%:', $$(o.b5)) + L('IVA 5%:', $$(o.i5));
-      if (o.b19) h += L('Base 19%:', $$(o.b19)) + L('IVA 19%:', $$(o.i19));
-      h += L('TOTAL:', `<strong>${$$(v.total)}</strong>`) + L('PAGO:', esc(v.medio || 'Efectivo'));
-      if ((v.medio || 'Efectivo') === 'Efectivo') h += L('PAGADO:', $$(v.pagado)) + L('CAMBIO:', $$(v.pagado - v.total));
-      return v.dian ? h + feBloque(v) : h;
-    }
+      function ticketHTML(v) {
+        const L = (a, b) => `<div style="display:flex;justify-content:space-between;"><span>${a}</span><span>${b}</span></div>`;
+        let h = `<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:5px;margin-bottom:5px;"><strong>${esc(DB.config.negocio).toUpperCase()}</strong><br>${v.dian ? "FACTURA ELECTRÓNICA DE VENTA" : "Ticket POS"}<br>${v.n} · ${new Date(v.fecha).toLocaleString("es-CO")}<br>Cajero: ${esc(v.cajero || "—")}</div>`;
+        if (v.dian) h += `<div>Cliente: ${esc(v.cliente.nombre)} · ${esc(v.cliente.doc)}</div>`;
+        v.items.forEach((i) => {
+          h += L(`${i.cant}x ${esc(i.nombre)}`, $$(i.precio * i.cant));
+        });
+        const o = tx(v.items, z());
+        h += '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;">';
+        if (o.ex) h += L("Excluido/0%:", $$(o.ex));
+        if (o.b5) h += L("Base 5%:", $$(o.b5)) + L("IVA 5%:", $$(o.i5));
+        if (o.b19) h += L("Base 19%:", $$(o.b19)) + L("IVA 19%:", $$(o.i19));
+        h += L("TOTAL:", `<strong>${$$(v.total)}</strong>`) + L("PAGO:", esc(v.medio || "Efectivo"));
+        if ((v.medio || "Efectivo") === "Efectivo") h += L("PAGADO:", $$(v.pagado)) + L("CAMBIO:", $$(v.pagado - v.total));
+        return v.dian ? h + feBloque(v) : h;
+      }
 
-    function mostrarTicket(v) {
-      $('ticketContenido').dataset.n = v.n; $('ticketContenido').innerHTML = ticketHTML(v); $('modalTicket').style.display = 'flex';
-    }
+      function mostrarTicket(v) {
+        $("ticketContenido").dataset.n = v.n;
+        $("ticketContenido").innerHTML = ticketHTML(v);
+        $("modalTicket").style.display = "flex";
+      }
 
-    /* ===== FACTUS (SIMULACIÓN) =====
+      /* ===== FACTUS (SIMULACIÓN) =====
        Imita la API: demora, corte de internet, validaciones, consecutivo de la
        resolución y CUFE. En producción esto lo hace el servidor llamando a Factus. */
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const Factus = { online: true };
-    const cufeDe = v => { const s = v.n + v.fecha + v.total; let o = ''; for (let i = 0; i < 12; i++) o += hs(s + i).padStart(8, '0'); return o; };
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const Factus = { online: true };
+      const cufeDe = (v) => {
+        const s = v.n + v.fecha + v.total;
+        let o = "";
+        for (let i = 0; i < 12; i++) o += hs(s + i).padStart(8, "0");
+        return o;
+      };
 
-    async function factusEmitir(v) {
-      await sleep(1500 + Math.random() * 1000);
-      if (!Factus.online) throw new Error('Sin conexión con Factus');
-      if (v.cliente.doc.replace(/\D/g, '').length < 5) return { ok: false, codigo: 'FAK24', mensaje: 'Número de documento del adquiriente inválido' };
-      const f = DB.config.factus;
-      if (f.siguiente > f.hasta) return { ok: false, codigo: 'FAB01', mensaje: 'Rango de numeración de la resolución agotado' };
-      return { ok: true, numero: f.prefijo + (f.siguiente++), cufe: cufeDe(v), fecha: new Date().toISOString() };
-    }
-
-    async function enviarFactus(v) {
-      if (v.fe.estado === 'Enviando' || v.fe.estado === 'Validada') return;
-      v.fe.estado = 'Enviando'; v.fe.intentos++; guardar(); refrescar(v);
-      try {
-        const r = await factusEmitir(v);
-        v.fe = r.ok ? { ...v.fe, estado: 'Validada', numero: r.numero, cufe: r.cufe, fechaValidacion: r.fecha, error: null }
-                    : { ...v.fe, estado: 'Rechazada', error: r.codigo + ': ' + r.mensaje };
-      } catch (e) { v.fe.estado = 'Pendiente'; v.fe.error = e.message; }
-      guardar(); refrescar(v);
-    }
-
-    function refrescar(v) {
-      const c = $('ticketContenido');
-      if (c.dataset.n === v.n && $('modalTicket').style.display === 'flex') c.innerHTML = ticketHTML(v);
-      if ($('view-facturas').classList.contains('active')) renderFacturas();
-    }
-
-    async function reintentarPendientes() {
-      for (const v of DB.ventas.filter(x => x.dian && x.fe && x.fe.estado === 'Pendiente')) await enviarFactus(v);
-    }
-
-    function pintarBadge() {
-      const b = $('feBadge'); b.textContent = 'Factus DEMO · ' + (Factus.online ? 'EN LÍNEA' : 'SIN INTERNET');
-      b.style.background = Factus.online ? '#27ae60' : '#e74c3c';
-    }
-    function alternarInternet() {
-      Factus.online = !Factus.online; pintarBadge();
-      if (Factus.online) reintentarPendientes(); else if ($('view-facturas').classList.contains('active')) renderFacturas();
-    }
-
-    function reintentarFactura(n) {
-      const v = DB.ventas.find(x => x.n === n);
-      if (v.fe.estado === 'Rechazada') {
-        const d = prompt('Corrija la cédula/NIT del cliente:', v.cliente.doc);
-        if (d === null) return; v.cliente.doc = d.trim();
+      async function factusEmitir(v) {
+        await sleep(1500 + Math.random() * 1000);
+        if (!Factus.online) throw new Error("Sin conexión con Factus");
+        if (v.cliente.doc.replace(/\D/g, "").length < 5)
+          return { ok: false, codigo: "FAK24", mensaje: "Número de documento del adquiriente inválido" };
+        const f = DB.config.factus;
+        if (f.siguiente > f.hasta) return { ok: false, codigo: "FAB01", mensaje: "Rango de numeración de la resolución agotado" };
+        return { ok: true, numero: f.prefijo + f.siguiente++, cufe: cufeDe(v), fecha: new Date().toISOString() };
       }
-      enviarFactus(v);
-    }
 
-    function verDetalleFE(n) {
-      const v = DB.ventas.find(x => x.n === n), f = DB.config.factus;
-      $('feJson').textContent = JSON.stringify({ ambiente: f.ambiente, resolucion: f.resolucion, prefijo: f.prefijo, venta: v.n,
-        estado: v.fe ? v.fe.estado : 'Sin datos', numero_factura: v.fe && v.fe.numero || null, cufe: v.fe && v.fe.cufe || null,
-        fecha_validacion: v.fe && v.fe.fechaValidacion || null, intentos: v.fe ? v.fe.intentos : 0, error: v.fe && v.fe.error || null,
-        adquiriente: v.cliente, items: v.items.map(i => ({ codigo: i.id, descripcion: i.nombre, cantidad: i.cant, precio: i.precio })), total: v.total }, null, 2);
-      $('modalFE').style.display = 'flex';
-    }
+      async function enviarFactus(v) {
+        if (v.fe.estado === "Enviando" || v.fe.estado === "Validada") return;
+        v.fe.estado = "Enviando";
+        v.fe.intentos++;
+        guardar();
+        refrescar(v);
+        try {
+          const r = await factusEmitir(v);
+          v.fe = r.ok
+            ? { ...v.fe, estado: "Validada", numero: r.numero, cufe: r.cufe, fechaValidacion: r.fecha, error: null }
+            : { ...v.fe, estado: "Rechazada", error: r.codigo + ": " + r.mensaje };
+        } catch (e) {
+          v.fe.estado = "Pendiente";
+          v.fe.error = e.message;
+        }
+        guardar();
+        refrescar(v);
+      }
 
-    function renderFacturas() {
-      const f = DB.config.factus, L = DB.ventas.filter(v => v.dian), est = v => v.fe ? v.fe.estado : 'Sin datos';
-      const col = { Validada: '#27ae60', Enviando: '#0abde3', Pendiente: '#e67e22', Rechazada: '#e74c3c' };
-      $('feOk').innerText = L.filter(v => est(v) === 'Validada').length;
-      $('fePend').innerText = L.filter(v => ['Pendiente', 'Enviando'].includes(est(v))).length;
-      $('feRech').innerText = L.filter(v => est(v) === 'Rechazada').length;
-      $('feConfig').innerHTML = `Ambiente: <b>${esc(f.ambiente)}</b> · Prefijo: <b>${esc(f.prefijo)}</b> · Resolución: <b>${esc(f.resolucion)}</b> · Rango: ${f.desde}–${f.hasta} · Próximo consecutivo: <b>${f.siguiente}</b> · Internet: <b>${Factus.online ? 'En línea' : 'Sin conexión'}</b>`;
-      $('feBody').innerHTML = L.slice().reverse().map(v => `<tr><td>${new Date(v.fecha).toLocaleString('es-CO')}</td><td>${v.n}</td><td>${esc(v.cliente.nombre)} · ${esc(v.cliente.doc)}</td><td>${$$(v.total)}</td>
-        <td><span class="status-badge" style="background:${col[est(v)] || '#576574'};">${est(v).toUpperCase()}</span></td><td>${v.fe && v.fe.numero || '—'}</td><td style="font-size:11px;">${v.fe && v.fe.cufe ? v.fe.cufe.slice(0, 14) + '…' : '—'}</td>
-        <td><button class="mini" onclick="verDetalleFE('${v.n}')">Detalle</button> <button class="mini" onclick="mostrarTicket(DB.ventas.find(x=>x.n==='${v.n}'))">Ticket</button>${['Pendiente', 'Rechazada'].includes(est(v)) ? ` <button class="mini" onclick="reintentarFactura('${v.n}')">Reintentar</button>` : ''}</td></tr>`).join('')
-        || '<tr><td colspan="8">Aún no hay facturas electrónicas. Cobre una venta marcando "Elec." en el POS.</td></tr>';
-    }
+      function refrescar(v) {
+        const c = $("ticketContenido");
+        if (c.dataset.n === v.n && $("modalTicket").style.display === "flex") c.innerHTML = ticketHTML(v);
+        if ($("view-facturas").classList.contains("active")) renderFacturas();
+      }
 
-    function cerrarTicket() {
-      $('modalTicket').style.display = 'none';
-      items = [];
-      $('medioPago').value = 'Efectivo'; $('efectivoRecibido').value = 0; $('checkDian').checked = false; toggleDianInputs();
-      $('docCliente').value = $('nomCliente').value = '';
-      actualizarTabla(); renderAtajos(); $('inputBuscar').focus();
-    }
+      async function reintentarPendientes() {
+        for (const v of DB.ventas.filter((x) => x.dian && x.fe && x.fe.estado === "Pendiente")) await enviarFactus(v);
+      }
 
-    /* ===== INVENTARIO ===== */
-    function renderInv() {
-      const q = $('invBuscar').value.toLowerCase();
-      $('invBody').innerHTML = DB.productos.filter(p => p.nombre.toLowerCase().includes(q) || p.codigo.includes(q)).map(p => {
-        const crit = p.stock <= p.minimo;
-        return `<tr style="${p.activo ? '' : 'opacity:.5'}"><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td><td>${p.stock} ${p.unidad}</td><td>${$$(p.precio)} / ${p.unidad} · IVA ${p.iva || 0}%</td>
-          <td><span class="status-badge" style="${!p.activo || crit ? 'background:#e74c3c;' : ''}">${!p.activo ? 'INACTIVO' : crit ? 'CRÍTICO' : 'NORMAL'}</span></td>
-          <td><button class="mini" onclick="editarProducto(${p.id})">Editar</button> <button class="mini" onclick="sumarStock(${p.id})">+ Stock</button> <button class="mini" onclick="eliminarProducto(${p.id})">${p.activo ? 'Eliminar' : 'Reactivar'}</button></td></tr>`;
-      }).join('') || '<tr><td colspan="6">Sin resultados.</td></tr>';
-      renderAtajos();
-    }
+      function pintarBadge() {
+        const b = $("feBadge");
+        b.textContent = "Factus DEMO · " + (Factus.online ? "EN LÍNEA" : "SIN INTERNET");
+        b.style.background = Factus.online ? "#27ae60" : "#e74c3c";
+      }
+      function alternarInternet() {
+        Factus.online = !Factus.online;
+        pintarBadge();
+        if (Factus.online) reintentarPendientes();
+        else if ($("view-facturas").classList.contains("active")) renderFacturas();
+      }
 
-    function limpiarForm() {
-      editId = null; $('formTitulo').innerText = 'Nuevo producto';
-      ['fCodigo', 'fNombre', 'fPrecio', 'fCosto', 'fStock', 'fMinimo'].forEach(i => $(i).value = '');
-      $('fUnidad').value = 'Und'; $('fIva').value = '0'; $('fAtajo').checked = false;
-    }
+      function reintentarFactura(n) {
+        const v = DB.ventas.find((x) => x.n === n);
+        if (v.fe.estado === "Rechazada") {
+          const d = prompt("Corrija la cédula/NIT del cliente:", v.cliente.doc);
+          if (d === null) return;
+          v.cliente.doc = d.trim();
+        }
+        enviarFactus(v);
+      }
 
-    function editarProducto(id) {
-      const p = DB.productos.find(x => x.id === id); editId = id;
-      $('formTitulo').innerText = 'Editar producto: ' + p.nombre;
-      $('fCodigo').value = p.codigo; $('fNombre').value = p.nombre; $('fUnidad').value = p.unidad;
-      $('fPrecio').value = p.precio; $('fCosto').value = p.costo; $('fStock').value = p.stock;
-      $('fMinimo').value = p.minimo; $('fIva').value = p.iva || 0; $('fAtajo').checked = p.atajo;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+      function verDetalleFE(n) {
+        const v = DB.ventas.find((x) => x.n === n),
+          f = DB.config.factus;
+        $("feJson").textContent = JSON.stringify(
+          {
+            ambiente: f.ambiente,
+            resolucion: f.resolucion,
+            prefijo: f.prefijo,
+            venta: v.n,
+            estado: v.fe ? v.fe.estado : "Sin datos",
+            numero_factura: (v.fe && v.fe.numero) || null,
+            cufe: (v.fe && v.fe.cufe) || null,
+            fecha_validacion: (v.fe && v.fe.fechaValidacion) || null,
+            intentos: v.fe ? v.fe.intentos : 0,
+            error: (v.fe && v.fe.error) || null,
+            adquiriente: v.cliente,
+            items: v.items.map((i) => ({ codigo: i.id, descripcion: i.nombre, cantidad: i.cant, precio: i.precio })),
+            total: v.total,
+          },
+          null,
+          2,
+        );
+        $("modalFE").style.display = "flex";
+      }
 
-    function guardarProducto() {
-      const o = { codigo: $('fCodigo').value.trim(), nombre: $('fNombre').value.trim(), unidad: $('fUnidad').value,
-        precio: parseFloat($('fPrecio').value) || 0, costo: parseFloat($('fCosto').value) || 0,
-        stock: parseFloat($('fStock').value) || 0, minimo: parseFloat($('fMinimo').value) || 0, iva: parseInt($('fIva').value) || 0, atajo: $('fAtajo').checked };
-      if (!o.codigo || !o.nombre || o.precio <= 0) return alert('Faltan código, nombre o precio de venta.');
-      if (DB.productos.some(p => p.codigo === o.codigo && p.id !== editId)) return alert('Ese código de barras ya existe en otro producto.');
-      if (o.costo > o.precio && !confirm('El costo es mayor al precio de venta. ¿Guardar igual?')) return;
-      if (editId === null) { o.id = Math.max(0, ...DB.productos.map(p => p.id)) + 1; o.activo = true; DB.productos.push(o); }
-      else Object.assign(DB.productos.find(p => p.id === editId), o);
-      guardar(); limpiarForm(); renderInv();
-    }
+      function renderFacturas() {
+        const f = DB.config.factus,
+          L = DB.ventas.filter((v) => v.dian),
+          est = (v) => (v.fe ? v.fe.estado : "Sin datos");
+        const col = { Validada: "#27ae60", Enviando: "#0abde3", Pendiente: "#e67e22", Rechazada: "#e74c3c" };
+        $("feOk").innerText = L.filter((v) => est(v) === "Validada").length;
+        $("fePend").innerText = L.filter((v) => ["Pendiente", "Enviando"].includes(est(v))).length;
+        $("feRech").innerText = L.filter((v) => est(v) === "Rechazada").length;
+        $("feConfig").innerHTML =
+          `Ambiente: <b>${esc(f.ambiente)}</b> · Prefijo: <b>${esc(f.prefijo)}</b> · Resolución: <b>${esc(f.resolucion)}</b> · Rango: ${f.desde}–${f.hasta} · Próximo consecutivo: <b>${f.siguiente}</b> · Internet: <b>${Factus.online ? "En línea" : "Sin conexión"}</b>`;
+        $("feBody").innerHTML =
+          L.slice()
+            .reverse()
+            .map(
+              (
+                v,
+              ) => `<tr><td>${new Date(v.fecha).toLocaleString("es-CO")}</td><td>${v.n}</td><td>${esc(v.cliente.nombre)} · ${esc(v.cliente.doc)}</td><td>${$$(v.total)}</td>
+        <td><span class="status-badge" style="background:${col[est(v)] || "#576574"};">${est(v).toUpperCase()}</span></td><td>${(v.fe && v.fe.numero) || "—"}</td><td style="font-size:11px;">${v.fe && v.fe.cufe ? v.fe.cufe.slice(0, 14) + "…" : "—"}</td>
+        <td><button class="mini" onclick="verDetalleFE('${v.n}')">Detalle</button> <button class="mini" onclick="mostrarTicket(DB.ventas.find(x=>x.n==='${v.n}'))">Ticket</button>${["Pendiente", "Rechazada"].includes(est(v)) ? ` <button class="mini" onclick="reintentarFactura('${v.n}')">Reintentar</button>` : ""}</td></tr>`,
+            )
+            .join("") || '<tr><td colspan="8">Aún no hay facturas electrónicas. Cobre una venta marcando "Elec." en el POS.</td></tr>';
+      }
 
-    function sumarStock(id) {
-      const p = DB.productos.find(x => x.id === id);
-      const q = parseFloat(prompt('¿Cuántas ' + p.unidad + ' llegan de ' + p.nombre + '?'));
-      if (q > 0) { p.stock += q; guardar(); renderInv(); }
-    }
+      function cerrarTicket() {
+        $("modalTicket").style.display = "none";
+        items = [];
+        $("medioPago").value = "Efectivo";
+        $("efectivoRecibido").value = 0;
+        $("checkDian").checked = false;
+        toggleDianInputs();
+        $("docCliente").value = $("nomCliente").value = "";
+        actualizarTabla();
+        renderAtajos();
+        $("inputBuscar").focus();
+      }
 
-    function eliminarProducto(id) {
-      const p = DB.productos.find(x => x.id === id);
-      if (!p.activo) p.activo = true;
-      else if (DB.ventas.some(v => v.items.some(i => i.id === id))) { p.activo = false; alert('Este producto ya tiene ventas. Se desactivó (no se borra) para no dañar los informes.'); }
-      else if (confirm('¿Eliminar ' + p.nombre + ' definitivamente?')) DB.productos = DB.productos.filter(x => x.id !== id);
-      guardar(); renderInv();
-    }
+      /* ===== INVENTARIO ===== */
+      function renderInv() {
+        const q = $("invBuscar").value.toLowerCase();
+        $("invBody").innerHTML =
+          DB.productos
+            .filter((p) => p.nombre.toLowerCase().includes(q) || p.codigo.includes(q))
+            .map((p) => {
+              const crit = p.stock <= p.minimo;
+              return `<tr style="${p.activo ? "" : "opacity:.5"}"><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td><td>${p.stock} ${p.unidad}</td><td>${$$(p.precio)} / ${p.unidad} · IVA ${p.iva || 0}%</td>
+          <td><span class="status-badge" style="${!p.activo || crit ? "background:#e74c3c;" : ""}">${!p.activo ? "INACTIVO" : crit ? "CRÍTICO" : "NORMAL"}</span></td>
+          <td><button class="mini" onclick="editarProducto(${p.id})">Editar</button> <button class="mini" onclick="sumarStock(${p.id})">+ Stock</button> <button class="mini" onclick="eliminarProducto(${p.id})">${p.activo ? "Eliminar" : "Reactivar"}</button></td></tr>`;
+            })
+            .join("") || '<tr><td colspan="6">Sin resultados.</td></tr>';
+        renderAtajos();
+      }
 
-    function descargarProductos() {
-      const d = { version: DB.version, config: DB.config, productos: DB.productos, usuarios: DB.usuarios, ventas: [] };
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }));
-      a.download = 'db.json'; a.click();
-    }
+      function limpiarForm() {
+        editId = null;
+        $("formTitulo").innerText = "Nuevo producto";
+        ["fCodigo", "fNombre", "fPrecio", "fCosto", "fStock", "fMinimo"].forEach((i) => ($(i).value = ""));
+        $("fUnidad").value = "Und";
+        $("fIva").value = "0";
+        $("fAtajo").checked = false;
+      }
 
-    /* ===== CIERRE, USUARIOS, INFORMES ===== */
-    const ventasTurno = () => DB.ventas.filter(v => !v.cerrada && (esAdmin() || v.usuario === sesion.usuario));
-    const esEf = v => (v.medio || 'Efectivo') === 'Efectivo';
-    const efectivoTurno = () => ventasTurno().filter(esEf).reduce((a, v) => a + v.total, 0);
-    const esperadoCaja = () => DB.config.base + efectivoTurno();
+      function editarProducto(id) {
+        const p = DB.productos.find((x) => x.id === id);
+        editId = id;
+        $("formTitulo").innerText = "Editar producto: " + p.nombre;
+        $("fCodigo").value = p.codigo;
+        $("fNombre").value = p.nombre;
+        $("fUnidad").value = p.unidad;
+        $("fPrecio").value = p.precio;
+        $("fCosto").value = p.costo;
+        $("fStock").value = p.stock;
+        $("fMinimo").value = p.minimo;
+        $("fIva").value = p.iva || 0;
+        $("fAtajo").checked = p.atajo;
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
 
-    function actualizarCierreView() {
-      const vt = ventasTurno(), ef = efectivoTurno(), ot = vt.reduce((a, v) => a + v.total, 0) - ef;
-      $('cierreBase').innerText = $$(DB.config.base); $('cierreNumVentas').innerText = vt.length;
-      $('cierreVentasEfectivo').innerText = $$(ef); $('cierreVentasOtros').innerText = $$(ot); $('cierreEfectivoEsperado').innerText = $$(esperadoCaja());
-      $('inputEfectivoReal').value = esperadoCaja(); calcularCuadreCierre();
-    }
+      function guardarProducto() {
+        const o = {
+          codigo: $("fCodigo").value.trim(),
+          nombre: $("fNombre").value.trim(),
+          unidad: $("fUnidad").value,
+          precio: parseFloat($("fPrecio").value) || 0,
+          costo: parseFloat($("fCosto").value) || 0,
+          stock: parseFloat($("fStock").value) || 0,
+          minimo: parseFloat($("fMinimo").value) || 0,
+          iva: parseInt($("fIva").value) || 0,
+          atajo: $("fAtajo").checked,
+        };
+        if (!o.codigo || !o.nombre || o.precio <= 0) return alert("Faltan código, nombre o precio de venta.");
+        if (DB.productos.some((p) => p.codigo === o.codigo && p.id !== editId))
+          return alert("Ese código de barras ya existe en otro producto.");
+        if (o.costo > o.precio && !confirm("El costo es mayor al precio de venta. ¿Guardar igual?")) return;
+        if (editId === null) {
+          o.id = Math.max(0, ...DB.productos.map((p) => p.id)) + 1;
+          o.activo = true;
+          DB.productos.push(o);
+        } else
+          Object.assign(
+            DB.productos.find((p) => p.id === editId),
+            o,
+          );
+        guardar();
+        limpiarForm();
+        renderInv();
+      }
 
-    function calcularCuadreCierre() {
-      const diff = (parseFloat($('inputEfectivoReal').value) || 0) - esperadoCaja(), el = $('cierreDiferencia');
-      el.innerText = diff === 0 ? '$ 0 [ OK ]' : diff < 0 ? '-' + $$(Math.abs(diff)) + ' [ FALTANTE ]' : '+' + $$(diff) + ' [ SOBRANTE ]';
-      el.style.color = diff === 0 ? '#27ae60' : '#e74c3c';
-    }
+      function sumarStock(id) {
+        const p = DB.productos.find((x) => x.id === id);
+        const q = parseFloat(prompt("¿Cuántas " + p.unidad + " llegan de " + p.nombre + "?"));
+        if (q > 0) {
+          p.stock += q;
+          guardar();
+          renderInv();
+        }
+      }
 
-    function imprimirReporteZ() {
-      const vt = ventasTurno(), ef = efectivoTurno(), ot = vt.reduce((a, v) => a + v.total, 0) - ef, io = vt.reduce((acc, v) => tx(v.items, acc), z()), esp = esperadoCaja(), real = parseFloat($('inputEfectivoReal').value) || 0;
-      if (!confirm('¿Cerrar el turno? Las ventas actuales quedarán cerradas.')) return;
-      $('ticketContenido').dataset.n = ''; $('ticketContenido').innerHTML = `<div style="text-align:center;"><strong>*** REPORTE Z ***</strong><br>${esc(DB.config.negocio).toUpperCase()}<br>${new Date().toLocaleString('es-CO')}</div>
+      function eliminarProducto(id) {
+        const p = DB.productos.find((x) => x.id === id);
+        if (!p.activo) p.activo = true;
+        else if (DB.ventas.some((v) => v.items.some((i) => i.id === id))) {
+          p.activo = false;
+          alert("Este producto ya tiene ventas. Se desactivó (no se borra) para no dañar los informes.");
+        } else if (confirm("¿Eliminar " + p.nombre + " definitivamente?")) DB.productos = DB.productos.filter((x) => x.id !== id);
+        guardar();
+        renderInv();
+      }
+
+      function descargarProductos() {
+        const d = { version: DB.version, config: DB.config, productos: DB.productos, usuarios: DB.usuarios, ventas: [] };
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: "application/json" }));
+        a.download = "db.json";
+        a.click();
+      }
+
+      /* ===== CIERRE, USUARIOS, INFORMES ===== */
+      const ventasTurno = () => DB.ventas.filter((v) => !v.cerrada && (esAdmin() || v.usuario === sesion.usuario));
+      const esEf = (v) => (v.medio || "Efectivo") === "Efectivo";
+      const efectivoTurno = () =>
+        ventasTurno()
+          .filter(esEf)
+          .reduce((a, v) => a + v.total, 0);
+      const esperadoCaja = () => DB.config.base + efectivoTurno();
+
+      function actualizarCierreView() {
+        const vt = ventasTurno(),
+          ef = efectivoTurno(),
+          ot = vt.reduce((a, v) => a + v.total, 0) - ef;
+        $("cierreBase").innerText = $$(DB.config.base);
+        $("cierreNumVentas").innerText = vt.length;
+        $("cierreVentasEfectivo").innerText = $$(ef);
+        $("cierreVentasOtros").innerText = $$(ot);
+        $("cierreEfectivoEsperado").innerText = $$(esperadoCaja());
+        $("inputEfectivoReal").value = esperadoCaja();
+        calcularCuadreCierre();
+      }
+
+      function calcularCuadreCierre() {
+        const diff = (parseFloat($("inputEfectivoReal").value) || 0) - esperadoCaja(),
+          el = $("cierreDiferencia");
+        el.innerText = diff === 0 ? "$ 0 [ OK ]" : diff < 0 ? "-" + $$(Math.abs(diff)) + " [ FALTANTE ]" : "+" + $$(diff) + " [ SOBRANTE ]";
+        el.style.color = diff === 0 ? "#27ae60" : "#e74c3c";
+      }
+
+      function imprimirReporteZ() {
+        const vt = ventasTurno(),
+          ef = efectivoTurno(),
+          ot = vt.reduce((a, v) => a + v.total, 0) - ef,
+          io = vt.reduce((acc, v) => tx(v.items, acc), z()),
+          esp = esperadoCaja(),
+          real = parseFloat($("inputEfectivoReal").value) || 0;
+        if (!confirm("¿Cerrar el turno? Las ventas actuales quedarán cerradas.")) return;
+        $("ticketContenido").dataset.n = "";
+        $("ticketContenido").innerHTML =
+          `<div style="text-align:center;"><strong>*** REPORTE Z ***</strong><br>${esc(DB.config.negocio).toUpperCase()}<br>${new Date().toLocaleString("es-CO")}</div>
         <hr style="margin:5px 0;border:none;border-top:1px dashed #000;">
         <div>Cajero: ${esc(sesion.nombre)}</div><div>Ventas: ${vt.length}</div><div>Base: ${$$(DB.config.base)}</div><div>Efectivo: ${$$(ef)}</div><div>Tarjeta/Nequi: ${$$(ot)}</div><div>IVA 5%: ${$$(io.i5)}</div><div>IVA 19%: ${$$(io.i19)}</div>
         <div>Esperado: ${$$(esp)}</div><div>Contado: ${$$(real)}</div><div><strong>Diferencia: ${$$(real - esp)}</strong></div>
         <div style="text-align:center;margin-top:6px;">Caja CERRADA</div>`;
-      vt.forEach(v => v.cerrada = true); guardar();
-      $('modalTicket').style.display = 'flex'; actualizarCierreView();
-    }
-
-    function renderUsuarios() {
-      $('usuariosBody').innerHTML = DB.usuarios.map(u => `<tr style="${u.activo ? '' : 'opacity:.5'}"><td>${esc(u.nombre)}</td><td>${esc(u.usuario)}</td><td>${esc(u.rol)}</td><td>${esc(u.caja)}</td>
-        <td><span class="status-badge" style="${u.activo ? '' : 'background:#e74c3c;'}">${u.activo ? 'ACTIVO' : 'INACTIVO'}</span></td>
-        <td><button class="mini" onclick="editarUsuario(${u.id})">Editar</button> <button class="mini" onclick="cambiarClave(${u.id})">Contraseña</button> <button class="mini" onclick="alternarUsuario(${u.id})">${u.activo ? 'Desactivar' : 'Activar'}</button> <button class="mini" onclick="eliminarUsuario(${u.id})">Eliminar</button></td></tr>`).join('');
-    }
-
-    function limpiarFormUsuario() {
-      editUserId = null; $('uTitulo').innerText = 'Nuevo usuario';
-      ['uNombre', 'uUsuario', 'uClave'].forEach(i => $(i).value = ''); $('uClave').placeholder = '';
-      $('uRol').value = 'Cajero'; $('uCaja').value = 'Caja #1';
-    }
-
-    function editarUsuario(id) {
-      const u = DB.usuarios.find(x => x.id === id); editUserId = id;
-      $('uTitulo').innerText = 'Editar usuario: ' + u.nombre;
-      $('uNombre').value = u.nombre; $('uUsuario').value = u.usuario; $('uClave').value = '';
-      $('uClave').placeholder = 'Vacío = no cambiar la contraseña'; $('uRol').value = u.rol; $('uCaja').value = u.caja;
-    }
-
-    const adminsActivos = () => DB.usuarios.filter(u => u.activo && u.rol === 'Admin').length;
-
-    function guardarUsuario() {
-      const o = { nombre: $('uNombre').value.trim(), usuario: $('uUsuario').value.trim().toLowerCase(), rol: $('uRol').value, caja: $('uCaja').value }, clave = $('uClave').value;
-      if (!o.nombre || !o.usuario) return alert('Faltan el nombre o el usuario.');
-      if ((editUserId === null || clave) && clave.length < 4) return alert('La contraseña debe tener mínimo 4 caracteres.');
-      if (DB.usuarios.some(u => u.usuario === o.usuario && u.id !== editUserId)) return alert('Ese usuario ya existe.');
-      if (o.rol === 'Admin') o.caja = 'Todas';
-      if (o.rol === 'Cajero' && o.caja === 'Todas') return alert('Un cajero debe tener asignada una caja (#1 o #2).');
-      if (editUserId === null) { o.id = Math.max(0, ...DB.usuarios.map(u => u.id)) + 1; o.activo = true; o.clave = hs(clave); DB.usuarios.push(o); }
-      else {
-        const u = DB.usuarios.find(x => x.id === editUserId);
-        if (u.rol === 'Admin' && o.rol !== 'Admin' && adminsActivos() < 2) return alert('Debe quedar al menos un administrador activo.');
-        Object.assign(u, o); if (clave) u.clave = hs(clave);
-        if (u.id === sesion.id) aplicarSesion();
+        vt.forEach((v) => (v.cerrada = true));
+        guardar();
+        $("modalTicket").style.display = "flex";
+        actualizarCierreView();
       }
-      guardar(); limpiarFormUsuario(); renderUsuarios();
-    }
 
-    function cambiarClave(id) {
-      const c = prompt('Nueva contraseña (mínimo 4 caracteres):');
-      if (c === null) return;
-      if (c.length < 4) return alert('La contraseña debe tener mínimo 4 caracteres.');
-      DB.usuarios.find(x => x.id === id).clave = hs(c); guardar(); alert('Contraseña actualizada.');
-    }
+      function renderUsuarios() {
+        $("usuariosBody").innerHTML = DB.usuarios
+          .map(
+            (
+              u,
+            ) => `<tr style="${u.activo ? "" : "opacity:.5"}"><td>${esc(u.nombre)}</td><td>${esc(u.usuario)}</td><td>${esc(u.rol)}</td><td>${esc(u.caja)}</td>
+        <td><span class="status-badge" style="${u.activo ? "" : "background:#e74c3c;"}">${u.activo ? "ACTIVO" : "INACTIVO"}</span></td>
+        <td><button class="mini" onclick="editarUsuario(${u.id})">Editar</button> <button class="mini" onclick="cambiarClave(${u.id})">Contraseña</button> <button class="mini" onclick="alternarUsuario(${u.id})">${u.activo ? "Desactivar" : "Activar"}</button> <button class="mini" onclick="eliminarUsuario(${u.id})">Eliminar</button></td></tr>`,
+          )
+          .join("");
+      }
 
-    function alternarUsuario(id) {
-      const u = DB.usuarios.find(x => x.id === id);
-      if (u.id === sesion.id) return alert('No puede desactivar su propio usuario.');
-      if (u.activo && u.rol === 'Admin' && adminsActivos() < 2) return alert('Debe quedar al menos un administrador activo.');
-      u.activo = !u.activo; guardar(); renderUsuarios();
-    }
+      function limpiarFormUsuario() {
+        editUserId = null;
+        $("uTitulo").innerText = "Nuevo usuario";
+        ["uNombre", "uUsuario", "uClave"].forEach((i) => ($(i).value = ""));
+        $("uClave").placeholder = "";
+        $("uRol").value = "Cajero";
+        $("uCaja").value = "Caja #1";
+      }
 
-    function eliminarUsuario(id) {
-      const u = DB.usuarios.find(x => x.id === id);
-      if (u.id === sesion.id) return alert('No puede eliminar su propio usuario.');
-      if (DB.ventas.some(v => v.usuario === u.usuario)) return alert('Este usuario ya tiene ventas. Desactívelo en vez de eliminarlo para conservar los informes.');
-      if (u.activo && u.rol === 'Admin' && adminsActivos() < 2) return alert('Debe quedar al menos un administrador activo.');
-      if (confirm('¿Eliminar a ' + u.nombre + ' definitivamente?')) { DB.usuarios = DB.usuarios.filter(x => x.id !== id); guardar(); renderUsuarios(); }
-    }
+      function editarUsuario(id) {
+        const u = DB.usuarios.find((x) => x.id === id);
+        editUserId = id;
+        $("uTitulo").innerText = "Editar usuario: " + u.nombre;
+        $("uNombre").value = u.nombre;
+        $("uUsuario").value = u.usuario;
+        $("uClave").value = "";
+        $("uClave").placeholder = "Vacío = no cambiar la contraseña";
+        $("uRol").value = u.rol;
+        $("uCaja").value = u.caja;
+      }
 
-    function infData() {
-      const p = $('iPer').value, f = ($('iFecha').value || '').split('-').map(Number);
-      if (f.length < 3 || isNaN(f[0])) return null;
-      const S = DB.ventas.filter(v => { const d = new Date(v.fecha); return d.getFullYear() === f[0] && (p === 'y' || (d.getMonth() + 1 === f[1] && (p === 'm' || d.getDate() === f[2]))) && (!$('iCaja').value || v.caja === $('iCaja').value) && (!$('iUser').value || v.cajero === $('iUser').value); });
-      const G = {}, T = Object.assign(z(), { n: 0, t: 0, u: 0 }), P = {}, top = {}; let fe = 0, fev = 0;
-      S.forEach(v => {
-        const d = new Date(v.fecha), k = String(p === 'd' ? d.getHours() : p === 'm' ? d.getDate() : d.getMonth()).padStart(2, '0');
-        G[k] = G[k] || Object.assign(z(), { n: 0, t: 0 });
-        [G[k], T].forEach(g => { g.n++; g.t += v.total; tx(v.items, g); });
-        T.u += v.items.reduce((a, i) => a + (i.precio - i.costo) * i.cant, 0);
-        const m = v.medio || 'Efectivo'; P[m] = (P[m] || 0) + v.total;
-        v.items.forEach(i => { const o = top[i.nombre] = top[i.nombre] || { q: 0, t: 0 }; o.q += i.cant; o.t += i.precio * i.cant; });
-        if (v.dian) { fe++; if (v.fe && v.fe.estado === 'Validada') fev++; }
-      });
-      const lab = k => p === 'd' ? k + ':00' : p === 'm' ? 'Día ' + k : MESES[+k];
-      const rows = Object.keys(G).sort().map(k => [lab(k), G[k].n, G[k].ex, G[k].b5, G[k].i5, G[k].b19, G[k].i19, G[k].t]);
-      const titulo = p === 'd' ? new Date(f[0], f[1] - 1, f[2]).toLocaleDateString('es-CO', { dateStyle: 'full' }) : p === 'm' ? MESES[f[1] - 1] + ' de ' + f[0] : 'Año ' + f[0];
-      return { p, S, rows, T, P, top: Object.entries(top).sort((a, b) => b[1].t - a[1].t).slice(0, 5), fe, fev, titulo };
-    }
+      const adminsActivos = () => DB.usuarios.filter((u) => u.activo && u.rol === "Admin").length;
 
-    function infHTML(D) {
-      const R = r => '<tr><td>' + r[0] + '</td>' + r.slice(1).map((x, i) => '<td style="text-align:right">' + (i ? $$(x) : x) + '</td>').join('') + '</tr>';
-      const T = D.T, tot = ['TOTAL', T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t];
-      return `<h3>Ventas · ${esc(D.titulo)}</h3><div style="overflow-x:auto"><table style="min-width:700px"><thead><tr><th>${D.p === 'd' ? 'Hora' : D.p === 'm' ? 'Día' : 'Mes'}</th><th>Docs</th><th>Excluido/0%</th><th>Base 5%</th><th>IVA 5%</th><th>Base 19%</th><th>IVA 19%</th><th>Total</th></tr></thead>
-        <tbody>${D.rows.map(R).join('') || '<tr><td colspan="8">Sin ventas en este periodo.</td></tr>'}</tbody><tfoot style="font-weight:bold;">${R(tot).replace(/<td/g, '<td style="border-top:2px solid #000;"').replace(/style="border-top:2px solid #000;" style="text-align:right"/g, 'style="border-top:2px solid #000;text-align:right"')}</tfoot></table></div>
-        <p style="margin-top:10px;"><strong>Medios de pago:</strong> ${Object.keys(D.P).map(k => esc(k) + ': ' + $$(D.P[k])).join(' · ') || '—'}</p>
+      function guardarUsuario() {
+        const o = {
+            nombre: $("uNombre").value.trim(),
+            usuario: $("uUsuario").value.trim().toLowerCase(),
+            rol: $("uRol").value,
+            caja: $("uCaja").value,
+          },
+          clave = $("uClave").value;
+        if (!o.nombre || !o.usuario) return alert("Faltan el nombre o el usuario.");
+        if ((editUserId === null || clave) && clave.length < 4) return alert("La contraseña debe tener mínimo 4 caracteres.");
+        if (DB.usuarios.some((u) => u.usuario === o.usuario && u.id !== editUserId)) return alert("Ese usuario ya existe.");
+        if (o.rol === "Admin") o.caja = "Todas";
+        if (o.rol === "Cajero" && o.caja === "Todas") return alert("Un cajero debe tener asignada una caja (#1 o #2).");
+        if (editUserId === null) {
+          o.id = Math.max(0, ...DB.usuarios.map((u) => u.id)) + 1;
+          o.activo = true;
+          o.clave = hs(clave);
+          DB.usuarios.push(o);
+        } else {
+          const u = DB.usuarios.find((x) => x.id === editUserId);
+          if (u.rol === "Admin" && o.rol !== "Admin" && adminsActivos() < 2) return alert("Debe quedar al menos un administrador activo.");
+          Object.assign(u, o);
+          if (clave) u.clave = hs(clave);
+          if (u.id === sesion.id) aplicarSesion();
+        }
+        guardar();
+        limpiarFormUsuario();
+        renderUsuarios();
+      }
+
+      function cambiarClave(id) {
+        const c = prompt("Nueva contraseña (mínimo 4 caracteres):");
+        if (c === null) return;
+        if (c.length < 4) return alert("La contraseña debe tener mínimo 4 caracteres.");
+        DB.usuarios.find((x) => x.id === id).clave = hs(c);
+        guardar();
+        alert("Contraseña actualizada.");
+      }
+
+      function alternarUsuario(id) {
+        const u = DB.usuarios.find((x) => x.id === id);
+        if (u.id === sesion.id) return alert("No puede desactivar su propio usuario.");
+        if (u.activo && u.rol === "Admin" && adminsActivos() < 2) return alert("Debe quedar al menos un administrador activo.");
+        u.activo = !u.activo;
+        guardar();
+        renderUsuarios();
+      }
+
+      function eliminarUsuario(id) {
+        const u = DB.usuarios.find((x) => x.id === id);
+        if (u.id === sesion.id) return alert("No puede eliminar su propio usuario.");
+        if (DB.ventas.some((v) => v.usuario === u.usuario))
+          return alert("Este usuario ya tiene ventas. Desactívelo en vez de eliminarlo para conservar los informes.");
+        if (u.activo && u.rol === "Admin" && adminsActivos() < 2) return alert("Debe quedar al menos un administrador activo.");
+        if (confirm("¿Eliminar a " + u.nombre + " definitivamente?")) {
+          DB.usuarios = DB.usuarios.filter((x) => x.id !== id);
+          guardar();
+          renderUsuarios();
+        }
+      }
+
+      function infData() {
+        const p = $("iPer").value,
+          f = ($("iFecha").value || "").split("-").map(Number);
+        if (f.length < 3 || isNaN(f[0])) return null;
+        const S = DB.ventas.filter((v) => {
+          const d = new Date(v.fecha);
+          return (
+            d.getFullYear() === f[0] &&
+            (p === "y" || (d.getMonth() + 1 === f[1] && (p === "m" || d.getDate() === f[2]))) &&
+            (!$("iCaja").value || v.caja === $("iCaja").value) &&
+            (!$("iUser").value || v.cajero === $("iUser").value)
+          );
+        });
+        const G = {},
+          T = Object.assign(z(), { n: 0, t: 0, u: 0 }),
+          P = {},
+          top = {};
+        let fe = 0,
+          fev = 0;
+        S.forEach((v) => {
+          const d = new Date(v.fecha),
+            k = String(p === "d" ? d.getHours() : p === "m" ? d.getDate() : d.getMonth()).padStart(2, "0");
+          G[k] = G[k] || Object.assign(z(), { n: 0, t: 0 });
+          [G[k], T].forEach((g) => {
+            g.n++;
+            g.t += v.total;
+            tx(v.items, g);
+          });
+          T.u += v.items.reduce((a, i) => a + (i.precio - i.costo) * i.cant, 0);
+          const m = v.medio || "Efectivo";
+          P[m] = (P[m] || 0) + v.total;
+          v.items.forEach((i) => {
+            const o = (top[i.nombre] = top[i.nombre] || { q: 0, t: 0 });
+            o.q += i.cant;
+            o.t += i.precio * i.cant;
+          });
+          if (v.dian) {
+            fe++;
+            if (v.fe && v.fe.estado === "Validada") fev++;
+          }
+        });
+        const lab = (k) => (p === "d" ? k + ":00" : p === "m" ? "Día " + k : MESES[+k]);
+        const rows = Object.keys(G)
+          .sort()
+          .map((k) => [lab(k), G[k].n, G[k].ex, G[k].b5, G[k].i5, G[k].b19, G[k].i19, G[k].t]);
+        const titulo =
+          p === "d"
+            ? new Date(f[0], f[1] - 1, f[2]).toLocaleDateString("es-CO", { dateStyle: "full" })
+            : p === "m"
+              ? MESES[f[1] - 1] + " de " + f[0]
+              : "Año " + f[0];
+        return {
+          p,
+          S,
+          rows,
+          T,
+          P,
+          top: Object.entries(top)
+            .sort((a, b) => b[1].t - a[1].t)
+            .slice(0, 5),
+          fe,
+          fev,
+          titulo,
+        };
+      }
+
+      function infHTML(D) {
+        const R = (r) =>
+          "<tr><td>" +
+          r[0] +
+          "</td>" +
+          r
+            .slice(1)
+            .map((x, i) => '<td style="text-align:right">' + (i ? $$(x) : x) + "</td>")
+            .join("") +
+          "</tr>";
+        const T = D.T,
+          tot = ["TOTAL", T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t];
+        return `<h3>Ventas · ${esc(D.titulo)}</h3><div style="overflow-x:auto"><table style="min-width:700px"><thead><tr><th>${D.p === "d" ? "Hora" : D.p === "m" ? "Día" : "Mes"}</th><th>Docs</th><th>Excluido/0%</th><th>Base 5%</th><th>IVA 5%</th><th>Base 19%</th><th>IVA 19%</th><th>Total</th></tr></thead>
+        <tbody>${D.rows.map(R).join("") || '<tr><td colspan="8">Sin ventas en este periodo.</td></tr>'}</tbody><tfoot style="font-weight:bold;">${R(
+          tot,
+        )
+          .replace(/<td/g, '<td style="border-top:2px solid #000;"')
+          .replace(
+            /style="border-top:2px solid #000;" style="text-align:right"/g,
+            'style="border-top:2px solid #000;text-align:right"',
+          )}</tfoot></table></div>
+        <p style="margin-top:10px;"><strong>Medios de pago:</strong> ${
+          Object.keys(D.P)
+            .map((k) => esc(k) + ": " + $$(D.P[k]))
+            .join(" · ") || "—"
+        }</p>
         <p><strong>Facturas electrónicas:</strong> ${D.fe} (validadas: ${D.fev}) · <strong>Documentos POS:</strong> ${T.n - D.fe}</p>
-        <p><strong>Más vendidos:</strong> ${D.top.map(([n, o]) => esc(n) + ' (' + o.q + ' · ' + $$(o.t) + ')').join(' · ') || '—'}</p>`;
-    }
+        <p><strong>Más vendidos:</strong> ${D.top.map(([n, o]) => esc(n) + " (" + o.q + " · " + $$(o.t) + ")").join(" · ") || "—"}</p>`;
+      }
 
-    function renderInforme() {
-      const sel = $('iUser'), cur = sel.value;
-      sel.innerHTML = '<option value="">Todos</option>' + DB.usuarios.map(u => `<option>${esc(u.nombre)}</option>`).join(''); sel.value = cur;
-      const D = infData(); if (!D) return;
-      $('dashVentas').innerText = $$(D.T.t); $('dashIva').innerText = $$(D.T.i5 + D.T.i19); $('dashUtilidad').innerText = $$(D.T.u); $('dashTickets').innerText = D.T.n;
-      $('infDetalle').innerHTML = infHTML(D);
-      $('ventasBody').innerHTML = DB.ventas.slice(-20).reverse().map(v => `<tr><td>${v.n}</td><td>${new Date(v.fecha).toLocaleString('es-CO')}</td><td>${v.dian ? 'Electrónica' + (v.fe ? ' · ' + v.fe.estado : '') : 'POS'}</td><td>${esc(v.cajero || '—')}</td><td>${$$(v.total)}</td></tr>`).join('') || '<tr><td colspan="5">Aún no hay ventas.</td></tr>';
-    }
+      function renderInforme() {
+        const sel = $("iUser"),
+          cur = sel.value;
+        sel.innerHTML = '<option value="">Todos</option>' + DB.usuarios.map((u) => `<option>${esc(u.nombre)}</option>`).join("");
+        sel.value = cur;
+        const D = infData();
+        if (!D) return;
+        $("dashVentas").innerText = $$(D.T.t);
+        $("dashIva").innerText = $$(D.T.i5 + D.T.i19);
+        $("dashUtilidad").innerText = $$(D.T.u);
+        $("dashTickets").innerText = D.T.n;
+        $("infDetalle").innerHTML = infHTML(D);
+        $("ventasBody").innerHTML =
+          DB.ventas
+            .slice(-20)
+            .reverse()
+            .map(
+              (v) =>
+                `<tr><td>${v.n}</td><td>${new Date(v.fecha).toLocaleString("es-CO")}</td><td>${v.dian ? "Electrónica" + (v.fe ? " · " + v.fe.estado : "") : "POS"}</td><td>${esc(v.cajero || "—")}</td><td>${$$(v.total)}</td></tr>`,
+            )
+            .join("") || '<tr><td colspan="5">Aún no hay ventas.</td></tr>';
+      }
 
-    function imprimirInforme() {
-      const D = infData(); if (!D) return;
-      $('printArea').innerHTML = `<h2>${esc(DB.config.negocio)} — Informe de ventas</h2><p>${esc(D.titulo)} · Caja: ${esc($('iCaja').value || 'Todas')} · Cajero: ${esc($('iUser').value || 'Todos')} · Generado ${new Date().toLocaleString('es-CO')} por ${esc(sesion.nombre)}</p>` + infHTML(D);
-      document.body.classList.add('print-inf'); window.print(); document.body.classList.remove('print-inf');
-    }
+      function imprimirInforme() {
+        const D = infData();
+        if (!D) return;
+        $("printArea").innerHTML =
+          `<h2>${esc(DB.config.negocio)} — Informe de ventas</h2><p>${esc(D.titulo)} · Caja: ${esc($("iCaja").value || "Todas")} · Cajero: ${esc($("iUser").value || "Todos")} · Generado ${new Date().toLocaleString("es-CO")} por ${esc(sesion.nombre)}</p>` +
+          infHTML(D);
+        document.body.classList.add("print-inf");
+        window.print();
+        document.body.classList.remove("print-inf");
+      }
 
-    function descargarCSV() {
-      const D = infData(); if (!D) return;
-      const T = D.T, r = x => typeof x === 'number' ? Math.round(x) : x;
-      const L = [['Periodo', 'Docs', 'Excluido', 'Base 5%', 'IVA 5%', 'Base 19%', 'IVA 19%', 'Total']]
-        .concat(D.rows.map(x => x.map(r)), [['TOTAL', T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t].map(r)]);
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(new Blob(['\ufeff' + L.map(x => x.join(';')).join('\n')], { type: 'text/csv' }));
-      a.download = 'informe-ventas-' + $('iPer').value + '-' + $('iFecha').value + '.csv'; a.click();
-    }
+      function descargarCSV() {
+        const D = infData();
+        if (!D) return;
+        const T = D.T,
+          r = (x) => (typeof x === "number" ? Math.round(x) : x);
+        const L = [["Periodo", "Docs", "Excluido", "Base 5%", "IVA 5%", "Base 19%", "IVA 19%", "Total"]].concat(
+          D.rows.map((x) => x.map(r)),
+          [["TOTAL", T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t].map(r)],
+        );
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob(["\ufeff" + L.map((x) => x.join(";")).join("\n")], { type: "text/csv" }));
+        a.download = "informe-ventas-" + $("iPer").value + "-" + $("iFecha").value + ".csv";
+        a.click();
+      }
 
-    window.addEventListener('keydown', e => {
-      const m = { F1: 'pos', F2: 'inventario', F3: 'cierre', F4: 'usuarios', F5: 'informe', F6: 'facturas' };
-      if (m[e.key]) { e.preventDefault(); cambiarTab(m[e.key]); }
-      if (e.key === 'F12') { e.preventDefault(); procesarCobro(); }
-    });
+      window.addEventListener("keydown", (e) => {
+        const m = { F1: "pos", F2: "inventario", F3: "cierre", F4: "usuarios", F5: "informe", F6: "facturas" };
+        if (m[e.key]) {
+          e.preventDefault();
+          cambiarTab(m[e.key]);
+        }
+        if (e.key === "F12") {
+          e.preventDefault();
+          procesarCobro();
+        }
+      });
 
-    function init() {
-      $('nombreNegocio').innerText = 'SmartPOS v4.0 — ' + DB.config.negocio;
-      DB.config.factus = DB.config.factus || { ambiente: 'Pruebas (demo)', prefijo: 'SETP', resolucion: '18760000001', desde: 990000000, hasta: 995000000, siguiente: 990000001 };
-      DB.ventas.forEach(v => { if (v.fe && v.fe.estado === 'Enviando') v.fe.estado = 'Pendiente'; });
-      $('iFecha').value = new Date().toLocaleDateString('sv-SE'); pintarBadge(); renderAtajos(); actualizarTabla();
-      const id = parseInt(sessionStorage.getItem('smartpos_sesion'));
-      const u = DB.usuarios.find(x => x.id === id && x.activo);
-      if (u) { sesion = u; aplicarSesion(); } else { $('login').style.display = 'flex'; $('lUser').focus(); }
-    }
-    cargarDB();
-  </script>
-</body>
+      function init() {
+        $("nombreNegocio").innerText = "SmartPOS v4.0 — " + DB.config.negocio;
+        DB.config.factus = DB.config.factus || {
+          ambiente: "Pruebas (demo)",
+          prefijo: "SETP",
+          resolucion: "18760000001",
+          desde: 990000000,
+          hasta: 995000000,
+          siguiente: 990000001,
+        };
+        DB.ventas.forEach((v) => {
+          if (v.fe && v.fe.estado === "Enviando") v.fe.estado = "Pendiente";
+        });
+        $("iFecha").value = new Date().toLocaleDateString("sv-SE");
+        pintarBadge();
+        renderAtajos();
+        actualizarTabla();
+        const id = parseInt(sessionStorage.getItem("smartpos_sesion"));
+        const u = DB.usuarios.find((x) => x.id === id && x.activo);
+        if (u) {
+          sesion = u;
+          aplicarSesion();
+        } else {
+          $("login").style.display = "flex";
+          $("lUser").focus();
+        }
+      }
+      cargarDB();
+    </script>
+  </body>
 </html>
