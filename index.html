@@ -51,6 +51,12 @@
     .login-box { background: #fff; padding: 24px; border-radius: 8px; width: 100%; max-width: 320px; }
     .login-box input { width: 100%; padding: 10px; border: 2px solid #c8d6e5; border-radius: 4px; font-size: 15px; margin-top: 2px; }
     .login-box label { font-size: 12px; font-weight: bold; color: #576574; display: block; margin-top: 8px; }
+    #printArea { display: none; }
+    @media print {
+      body.print-inf > #printArea { display: block !important; color: #000; background: #fff; padding: 8px; font-size: 12px; }
+      body.print-inf > #modalTicket { display: none !important; }
+      #printArea table { min-width: 0; } #printArea th { background: #fff; color: #000; border-bottom: 2px solid #000; }
+    }
     @media print { body > *:not(#modalTicket) { display: none !important; } #modalTicket { position: static; background: none; display: block !important; } }
   </style>
 </head>
@@ -117,6 +123,8 @@
           <h1 id="totalMonto">$ 0</h1>
         </div>
         <div style="margin-top: 10px;">
+          <label style="font-size: 12px; font-weight: bold;">Medio de pago:</label>
+          <select id="medioPago" class="pay-input" style="font-size:16px;margin-bottom:8px;" onchange="calcularVueltos()"><option>Efectivo</option><option>Tarjeta</option><option>Nequi / Daviplata</option></select>
           <label style="font-size: 12px; font-weight: bold;">Efectivo Recibido ($):</label>
           <input type="number" id="efectivoRecibido" class="pay-input" value="0" oninput="calcularVueltos()">
         </div>
@@ -141,6 +149,7 @@
         <label>Costo<input id="fCosto" type="number" min="0"></label>
         <label>Stock<input id="fStock" type="number" min="0" step="any"></label>
         <label>Stock mínimo<input id="fMinimo" type="number" min="0" step="any"></label>
+        <label>IVA<select id="fIva"><option value="0">0% (excluido/exento)</option><option value="5">5%</option><option value="19">19%</option></select></label>
         <label style="display:flex;align-items:center;gap:6px;"><input id="fAtajo" type="checkbox" style="width:auto;"> Atajo en POS</label>
       </div>
       <button class="btn" onclick="guardarProducto()">Guardar producto</button>
@@ -169,6 +178,7 @@
         <p>Base Inicial: <strong id="cierreBase">$ 0</strong></p>
         <p>Ventas del turno: <strong id="cierreNumVentas">0</strong></p>
         <p>Ventas Efectivo: <strong id="cierreVentasEfectivo">$ 0</strong></p>
+        <p>Ventas Tarjeta / Nequi: <strong id="cierreVentasOtros">$ 0</strong></p>
         <p>Efectivo Esperado: <strong id="cierreEfectivoEsperado" style="color:#10ac84;">$ 0</strong></p>
       </div>
       <div style="background:#f8f9fa;border:1px solid #ddd;padding:15px;border-radius:6px;">
@@ -208,11 +218,23 @@
 
   <!-- VISTA INFORME -->
   <div id="view-informe" class="view-panel">
+    <div class="card">
+      <div class="form-grid">
+        <label>Periodo<select id="iPer" onchange="renderInforme()"><option value="d">Por día</option><option value="m">Por mes</option><option value="y">Por año</option></select></label>
+        <label>Fecha<input type="date" id="iFecha" onchange="renderInforme()"></label>
+        <label>Caja<select id="iCaja" onchange="renderInforme()"><option value="">Todas</option><option>Caja #1</option><option>Caja #2</option></select></label>
+        <label>Cajero<select id="iUser" onchange="renderInforme()"></select></label>
+      </div>
+      <button class="btn" onclick="imprimirInforme()">Imprimir informe</button>
+      <button class="btn gris" onclick="descargarCSV()">Descargar CSV</button>
+    </div>
     <div class="dashboard-grid">
       <div class="dash-card"><h4>Ventas Totales</h4><h2 id="dashVentas">$ 0</h2></div>
+      <div class="dash-card"><h4>IVA generado</h4><h2 id="dashIva">$ 0</h2></div>
       <div class="dash-card"><h4>Utilidad Estimada</h4><h2 id="dashUtilidad">$ 0</h2></div>
       <div class="dash-card"><h4>Tickets emitidos</h4><h2 id="dashTickets">0</h2></div>
     </div>
+    <div class="card" id="infDetalle"></div>
     <div class="card">
       <h3>Últimas ventas</h3>
       <div class="table-container">
@@ -223,6 +245,7 @@
       </div>
     </div>
   </div>
+  <div id="printArea"></div>
 
   <!-- VISTA FACTURAS DIAN -->
   <div id="view-facturas" class="view-panel">
@@ -294,6 +317,10 @@
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     let items = [], editId = null;
     const total = () => items.reduce((a, i) => a + i.precio * i.cant, 0);
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    /* El precio de venta ya incluye IVA: base = precio / (1 + tarifa). */
+    const z = () => ({ ex: 0, b5: 0, i5: 0, b19: 0, i19: 0 });
+    const tx = (it, o) => { it.forEach(l => { const g = l.precio * l.cant, r = l.iva || 0, b = g / (1 + r / 100); if (r === 5) { o.b5 += b; o.i5 += g - b; } else if (r === 19) { o.b19 += b; o.i19 += g - b; } else o.ex += g; }); return o; };
 
     /* ===== NAVEGACIÓN ===== */
     const hs = t => { let h = 5381; for (let i = 0; i < t.length; i++) h = ((h * 33) ^ t.charCodeAt(i)) >>> 0; return h.toString(16); };
@@ -345,7 +372,7 @@
       const nueva = (linea ? linea.cant : 0) + 1;
       if (nueva > p.stock) return alert('Stock insuficiente. Quedan ' + p.stock + ' ' + p.unidad + ' de ' + p.nombre);
       if (linea) linea.cant = nueva;
-      else items.push({ id: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, cant: 1 });
+      else items.push({ id: p.id, nombre: p.nombre, precio: p.precio, costo: p.costo, iva: p.iva || 0, cant: 1 });
       actualizarTabla();
     }
 
@@ -376,6 +403,8 @@
     }
 
     function calcularVueltos() {
+      const efe = $('medioPago').value === 'Efectivo';
+      $('efectivoRecibido').disabled = !efe; if (!efe) $('efectivoRecibido').value = total();
       const v = (parseFloat($('efectivoRecibido').value) || 0) - total();
       $('vueltosMonto').innerText = $$(v > 0 ? v : 0);
     }
@@ -385,11 +414,11 @@
     function procesarCobro() {
       if (!sesion) return;
       if (!items.length) return alert('Cargue al menos un producto.');
-      const t = total(), pagado = parseFloat($('efectivoRecibido').value) || 0, dian = $('checkDian').checked;
+      const t = total(), medio = $('medioPago').value, pagado = medio === 'Efectivo' ? (parseFloat($('efectivoRecibido').value) || 0) : t, dian = $('checkDian').checked;
       if (pagado < t) return alert('El dinero ingresado es menor al total.');
       if (dian && (!$('docCliente').value.trim() || !$('nomCliente').value.trim())) return alert('Factura electrónica: falta cédula/NIT o nombre del cliente.');
       const n = 'V-' + String(DB.ventas.length + 1).padStart(5, '0');
-      const v = { n, fecha: new Date().toISOString(), items: items.map(i => ({ ...i })), total: t, pagado, dian,
+      const v = { n, fecha: new Date().toISOString(), items: items.map(i => ({ ...i })), total: t, pagado, medio, dian,
         cliente: dian ? { doc: $('docCliente').value.trim(), nombre: $('nomCliente').value.trim() } : null,
         cerrada: false, usuario: sesion.usuario, cajero: sesion.nombre, caja: sesion.caja };
       if (dian) v.fe = { estado: 'Pendiente', intentos: 0 };
@@ -428,7 +457,13 @@
       let h = `<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:5px;margin-bottom:5px;"><strong>${esc(DB.config.negocio).toUpperCase()}</strong><br>${v.dian ? 'FACTURA ELECTRÓNICA DE VENTA' : 'Ticket POS'}<br>${v.n} · ${new Date(v.fecha).toLocaleString('es-CO')}<br>Cajero: ${esc(v.cajero || '—')}</div>`;
       if (v.dian) h += `<div>Cliente: ${esc(v.cliente.nombre)} · ${esc(v.cliente.doc)}</div>`;
       v.items.forEach(i => { h += L(`${i.cant}x ${esc(i.nombre)}`, $$(i.precio * i.cant)); });
-      h += '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;">' + L('TOTAL:', `<strong>${$$(v.total)}</strong>`) + L('PAGADO:', $$(v.pagado)) + L('CAMBIO:', $$(v.pagado - v.total));
+      const o = tx(v.items, z());
+      h += '<hr style="margin:5px 0;border:none;border-top:1px dashed #000;">';
+      if (o.ex) h += L('Excluido/0%:', $$(o.ex));
+      if (o.b5) h += L('Base 5%:', $$(o.b5)) + L('IVA 5%:', $$(o.i5));
+      if (o.b19) h += L('Base 19%:', $$(o.b19)) + L('IVA 19%:', $$(o.i19));
+      h += L('TOTAL:', `<strong>${$$(v.total)}</strong>`) + L('PAGO:', esc(v.medio || 'Efectivo'));
+      if ((v.medio || 'Efectivo') === 'Efectivo') h += L('PAGADO:', $$(v.pagado)) + L('CAMBIO:', $$(v.pagado - v.total));
       return v.dian ? h + feBloque(v) : h;
     }
 
@@ -516,7 +551,7 @@
     function cerrarTicket() {
       $('modalTicket').style.display = 'none';
       items = [];
-      $('efectivoRecibido').value = 0; $('checkDian').checked = false; toggleDianInputs();
+      $('medioPago').value = 'Efectivo'; $('efectivoRecibido').value = 0; $('checkDian').checked = false; toggleDianInputs();
       $('docCliente').value = $('nomCliente').value = '';
       actualizarTabla(); renderAtajos(); $('inputBuscar').focus();
     }
@@ -526,7 +561,7 @@
       const q = $('invBuscar').value.toLowerCase();
       $('invBody').innerHTML = DB.productos.filter(p => p.nombre.toLowerCase().includes(q) || p.codigo.includes(q)).map(p => {
         const crit = p.stock <= p.minimo;
-        return `<tr style="${p.activo ? '' : 'opacity:.5'}"><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td><td>${p.stock} ${p.unidad}</td><td>${$$(p.precio)} / ${p.unidad}</td>
+        return `<tr style="${p.activo ? '' : 'opacity:.5'}"><td>${esc(p.codigo)}</td><td>${esc(p.nombre)}</td><td>${p.stock} ${p.unidad}</td><td>${$$(p.precio)} / ${p.unidad} · IVA ${p.iva || 0}%</td>
           <td><span class="status-badge" style="${!p.activo || crit ? 'background:#e74c3c;' : ''}">${!p.activo ? 'INACTIVO' : crit ? 'CRÍTICO' : 'NORMAL'}</span></td>
           <td><button class="mini" onclick="editarProducto(${p.id})">Editar</button> <button class="mini" onclick="sumarStock(${p.id})">+ Stock</button> <button class="mini" onclick="eliminarProducto(${p.id})">${p.activo ? 'Eliminar' : 'Reactivar'}</button></td></tr>`;
       }).join('') || '<tr><td colspan="6">Sin resultados.</td></tr>';
@@ -536,7 +571,7 @@
     function limpiarForm() {
       editId = null; $('formTitulo').innerText = 'Nuevo producto';
       ['fCodigo', 'fNombre', 'fPrecio', 'fCosto', 'fStock', 'fMinimo'].forEach(i => $(i).value = '');
-      $('fUnidad').value = 'Und'; $('fAtajo').checked = false;
+      $('fUnidad').value = 'Und'; $('fIva').value = '0'; $('fAtajo').checked = false;
     }
 
     function editarProducto(id) {
@@ -544,14 +579,14 @@
       $('formTitulo').innerText = 'Editar producto: ' + p.nombre;
       $('fCodigo').value = p.codigo; $('fNombre').value = p.nombre; $('fUnidad').value = p.unidad;
       $('fPrecio').value = p.precio; $('fCosto').value = p.costo; $('fStock').value = p.stock;
-      $('fMinimo').value = p.minimo; $('fAtajo').checked = p.atajo;
+      $('fMinimo').value = p.minimo; $('fIva').value = p.iva || 0; $('fAtajo').checked = p.atajo;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function guardarProducto() {
       const o = { codigo: $('fCodigo').value.trim(), nombre: $('fNombre').value.trim(), unidad: $('fUnidad').value,
         precio: parseFloat($('fPrecio').value) || 0, costo: parseFloat($('fCosto').value) || 0,
-        stock: parseFloat($('fStock').value) || 0, minimo: parseFloat($('fMinimo').value) || 0, atajo: $('fAtajo').checked };
+        stock: parseFloat($('fStock').value) || 0, minimo: parseFloat($('fMinimo').value) || 0, iva: parseInt($('fIva').value) || 0, atajo: $('fAtajo').checked };
       if (!o.codigo || !o.nombre || o.precio <= 0) return alert('Faltan código, nombre o precio de venta.');
       if (DB.productos.some(p => p.codigo === o.codigo && p.id !== editId)) return alert('Ese código de barras ya existe en otro producto.');
       if (o.costo > o.precio && !confirm('El costo es mayor al precio de venta. ¿Guardar igual?')) return;
@@ -583,12 +618,14 @@
 
     /* ===== CIERRE, USUARIOS, INFORMES ===== */
     const ventasTurno = () => DB.ventas.filter(v => !v.cerrada && (esAdmin() || v.usuario === sesion.usuario));
-    const esperadoCaja = () => DB.config.base + ventasTurno().reduce((a, v) => a + v.total, 0);
+    const esEf = v => (v.medio || 'Efectivo') === 'Efectivo';
+    const efectivoTurno = () => ventasTurno().filter(esEf).reduce((a, v) => a + v.total, 0);
+    const esperadoCaja = () => DB.config.base + efectivoTurno();
 
     function actualizarCierreView() {
-      const vt = ventasTurno(), ef = vt.reduce((a, v) => a + v.total, 0);
+      const vt = ventasTurno(), ef = efectivoTurno(), ot = vt.reduce((a, v) => a + v.total, 0) - ef;
       $('cierreBase').innerText = $$(DB.config.base); $('cierreNumVentas').innerText = vt.length;
-      $('cierreVentasEfectivo').innerText = $$(ef); $('cierreEfectivoEsperado').innerText = $$(esperadoCaja());
+      $('cierreVentasEfectivo').innerText = $$(ef); $('cierreVentasOtros').innerText = $$(ot); $('cierreEfectivoEsperado').innerText = $$(esperadoCaja());
       $('inputEfectivoReal').value = esperadoCaja(); calcularCuadreCierre();
     }
 
@@ -599,11 +636,11 @@
     }
 
     function imprimirReporteZ() {
-      const vt = ventasTurno(), ef = vt.reduce((a, v) => a + v.total, 0), esp = esperadoCaja(), real = parseFloat($('inputEfectivoReal').value) || 0;
+      const vt = ventasTurno(), ef = efectivoTurno(), ot = vt.reduce((a, v) => a + v.total, 0) - ef, io = vt.reduce((acc, v) => tx(v.items, acc), z()), esp = esperadoCaja(), real = parseFloat($('inputEfectivoReal').value) || 0;
       if (!confirm('¿Cerrar el turno? Las ventas actuales quedarán cerradas.')) return;
       $('ticketContenido').dataset.n = ''; $('ticketContenido').innerHTML = `<div style="text-align:center;"><strong>*** REPORTE Z ***</strong><br>${esc(DB.config.negocio).toUpperCase()}<br>${new Date().toLocaleString('es-CO')}</div>
         <hr style="margin:5px 0;border:none;border-top:1px dashed #000;">
-        <div>Cajero: ${esc(sesion.nombre)}</div><div>Ventas: ${vt.length}</div><div>Base: ${$$(DB.config.base)}</div><div>Efectivo: ${$$(ef)}</div>
+        <div>Cajero: ${esc(sesion.nombre)}</div><div>Ventas: ${vt.length}</div><div>Base: ${$$(DB.config.base)}</div><div>Efectivo: ${$$(ef)}</div><div>Tarjeta/Nequi: ${$$(ot)}</div><div>IVA 5%: ${$$(io.i5)}</div><div>IVA 19%: ${$$(io.i19)}</div>
         <div>Esperado: ${$$(esp)}</div><div>Contado: ${$$(real)}</div><div><strong>Diferencia: ${$$(real - esp)}</strong></div>
         <div style="text-align:center;margin-top:6px;">Caja CERRADA</div>`;
       vt.forEach(v => v.cerrada = true); guardar();
@@ -670,11 +707,59 @@
       if (confirm('¿Eliminar a ' + u.nombre + ' definitivamente?')) { DB.usuarios = DB.usuarios.filter(x => x.id !== id); guardar(); renderUsuarios(); }
     }
 
+    function infData() {
+      const p = $('iPer').value, f = ($('iFecha').value || '').split('-').map(Number);
+      if (f.length < 3 || isNaN(f[0])) return null;
+      const S = DB.ventas.filter(v => { const d = new Date(v.fecha); return d.getFullYear() === f[0] && (p === 'y' || (d.getMonth() + 1 === f[1] && (p === 'm' || d.getDate() === f[2]))) && (!$('iCaja').value || v.caja === $('iCaja').value) && (!$('iUser').value || v.cajero === $('iUser').value); });
+      const G = {}, T = Object.assign(z(), { n: 0, t: 0, u: 0 }), P = {}, top = {}; let fe = 0, fev = 0;
+      S.forEach(v => {
+        const d = new Date(v.fecha), k = String(p === 'd' ? d.getHours() : p === 'm' ? d.getDate() : d.getMonth()).padStart(2, '0');
+        G[k] = G[k] || Object.assign(z(), { n: 0, t: 0 });
+        [G[k], T].forEach(g => { g.n++; g.t += v.total; tx(v.items, g); });
+        T.u += v.items.reduce((a, i) => a + (i.precio - i.costo) * i.cant, 0);
+        const m = v.medio || 'Efectivo'; P[m] = (P[m] || 0) + v.total;
+        v.items.forEach(i => { const o = top[i.nombre] = top[i.nombre] || { q: 0, t: 0 }; o.q += i.cant; o.t += i.precio * i.cant; });
+        if (v.dian) { fe++; if (v.fe && v.fe.estado === 'Validada') fev++; }
+      });
+      const lab = k => p === 'd' ? k + ':00' : p === 'm' ? 'Día ' + k : MESES[+k];
+      const rows = Object.keys(G).sort().map(k => [lab(k), G[k].n, G[k].ex, G[k].b5, G[k].i5, G[k].b19, G[k].i19, G[k].t]);
+      const titulo = p === 'd' ? new Date(f[0], f[1] - 1, f[2]).toLocaleDateString('es-CO', { dateStyle: 'full' }) : p === 'm' ? MESES[f[1] - 1] + ' de ' + f[0] : 'Año ' + f[0];
+      return { p, S, rows, T, P, top: Object.entries(top).sort((a, b) => b[1].t - a[1].t).slice(0, 5), fe, fev, titulo };
+    }
+
+    function infHTML(D) {
+      const R = r => '<tr><td>' + r[0] + '</td>' + r.slice(1).map((x, i) => '<td style="text-align:right">' + (i ? $$(x) : x) + '</td>').join('') + '</tr>';
+      const T = D.T, tot = ['TOTAL', T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t];
+      return `<h3>Ventas · ${esc(D.titulo)}</h3><div style="overflow-x:auto"><table style="min-width:700px"><thead><tr><th>${D.p === 'd' ? 'Hora' : D.p === 'm' ? 'Día' : 'Mes'}</th><th>Docs</th><th>Excluido/0%</th><th>Base 5%</th><th>IVA 5%</th><th>Base 19%</th><th>IVA 19%</th><th>Total</th></tr></thead>
+        <tbody>${D.rows.map(R).join('') || '<tr><td colspan="8">Sin ventas en este periodo.</td></tr>'}</tbody><tfoot style="font-weight:bold;">${R(tot).replace(/<td/g, '<td style="border-top:2px solid #000;"').replace(/style="border-top:2px solid #000;" style="text-align:right"/g, 'style="border-top:2px solid #000;text-align:right"')}</tfoot></table></div>
+        <p style="margin-top:10px;"><strong>Medios de pago:</strong> ${Object.keys(D.P).map(k => esc(k) + ': ' + $$(D.P[k])).join(' · ') || '—'}</p>
+        <p><strong>Facturas electrónicas:</strong> ${D.fe} (validadas: ${D.fev}) · <strong>Documentos POS:</strong> ${T.n - D.fe}</p>
+        <p><strong>Más vendidos:</strong> ${D.top.map(([n, o]) => esc(n) + ' (' + o.q + ' · ' + $$(o.t) + ')').join(' · ') || '—'}</p>`;
+    }
+
     function renderInforme() {
-      const tv = DB.ventas.reduce((a, v) => a + v.total, 0);
-      const ut = DB.ventas.reduce((a, v) => a + v.items.reduce((b, i) => b + (i.precio - i.costo) * i.cant, 0), 0);
-      $('dashVentas').innerText = $$(tv); $('dashUtilidad').innerText = $$(ut); $('dashTickets').innerText = DB.ventas.length;
+      const sel = $('iUser'), cur = sel.value;
+      sel.innerHTML = '<option value="">Todos</option>' + DB.usuarios.map(u => `<option>${esc(u.nombre)}</option>`).join(''); sel.value = cur;
+      const D = infData(); if (!D) return;
+      $('dashVentas').innerText = $$(D.T.t); $('dashIva').innerText = $$(D.T.i5 + D.T.i19); $('dashUtilidad').innerText = $$(D.T.u); $('dashTickets').innerText = D.T.n;
+      $('infDetalle').innerHTML = infHTML(D);
       $('ventasBody').innerHTML = DB.ventas.slice(-20).reverse().map(v => `<tr><td>${v.n}</td><td>${new Date(v.fecha).toLocaleString('es-CO')}</td><td>${v.dian ? 'Electrónica' + (v.fe ? ' · ' + v.fe.estado : '') : 'POS'}</td><td>${esc(v.cajero || '—')}</td><td>${$$(v.total)}</td></tr>`).join('') || '<tr><td colspan="5">Aún no hay ventas.</td></tr>';
+    }
+
+    function imprimirInforme() {
+      const D = infData(); if (!D) return;
+      $('printArea').innerHTML = `<h2>${esc(DB.config.negocio)} — Informe de ventas</h2><p>${esc(D.titulo)} · Caja: ${esc($('iCaja').value || 'Todas')} · Cajero: ${esc($('iUser').value || 'Todos')} · Generado ${new Date().toLocaleString('es-CO')} por ${esc(sesion.nombre)}</p>` + infHTML(D);
+      document.body.classList.add('print-inf'); window.print(); document.body.classList.remove('print-inf');
+    }
+
+    function descargarCSV() {
+      const D = infData(); if (!D) return;
+      const T = D.T, r = x => typeof x === 'number' ? Math.round(x) : x;
+      const L = [['Periodo', 'Docs', 'Excluido', 'Base 5%', 'IVA 5%', 'Base 19%', 'IVA 19%', 'Total']]
+        .concat(D.rows.map(x => x.map(r)), [['TOTAL', T.n, T.ex, T.b5, T.i5, T.b19, T.i19, T.t].map(r)]);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob(['\ufeff' + L.map(x => x.join(';')).join('\n')], { type: 'text/csv' }));
+      a.download = 'informe-ventas-' + $('iPer').value + '-' + $('iFecha').value + '.csv'; a.click();
     }
 
     window.addEventListener('keydown', e => {
@@ -687,7 +772,7 @@
       $('nombreNegocio').innerText = 'SmartPOS v4.0 — ' + DB.config.negocio;
       DB.config.factus = DB.config.factus || { ambiente: 'Pruebas (demo)', prefijo: 'SETP', resolucion: '18760000001', desde: 990000000, hasta: 995000000, siguiente: 990000001 };
       DB.ventas.forEach(v => { if (v.fe && v.fe.estado === 'Enviando') v.fe.estado = 'Pendiente'; });
-      pintarBadge(); renderAtajos(); actualizarTabla();
+      $('iFecha').value = new Date().toLocaleDateString('sv-SE'); pintarBadge(); renderAtajos(); actualizarTabla();
       const id = parseInt(sessionStorage.getItem('smartpos_sesion'));
       const u = DB.usuarios.find(x => x.id === id && x.activo);
       if (u) { sesion = u; aplicarSesion(); } else { $('login').style.display = 'flex'; $('lUser').focus(); }
