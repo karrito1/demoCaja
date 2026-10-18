@@ -1,0 +1,111 @@
+{
+  "version": 3,
+  "config": {
+    "negocio": "Granero El Canasto",
+    "cajero": "Jenny",
+    "base": 100000,
+    "factus": {
+      "ambiente": "Pruebas (demo)",
+      "prefijo": "SETP",
+      "resolucion": "18760000001",
+      "desde": 990000000,
+      "hasta": 995000000,
+      "siguiente": 990000001
+    }
+  },
+  "productos": [
+    {
+      "id": 1,
+      "codigo": "7701001",
+      "nombre": "Maíz Duro (Granel)",
+      "unidad": "Kg",
+      "precio": 3000,
+      "costo": 2400,
+      "stock": 120.5,
+      "minimo": 20,
+      "atajo": true,
+      "activo": true
+    },
+    {
+      "id": 2,
+      "codigo": "7701002",
+      "nombre": "Arroz Arroba",
+      "unidad": "Arroba",
+      "precio": 45000,
+      "costo": 39000,
+      "stock": 18,
+      "minimo": 5,
+      "atajo": true,
+      "activo": true
+    },
+    {
+      "id": 3,
+      "codigo": "7701003",
+      "nombre": "Fríjol Cargamanto",
+      "unidad": "Kg",
+      "precio": 8500,
+      "costo": 6800,
+      "stock": 3,
+      "minimo": 10,
+      "atajo": true,
+      "activo": true
+    },
+    {
+      "id": 4,
+      "codigo": "7701004",
+      "nombre": "Arroba Maíz Duro",
+      "unidad": "Arroba",
+      "precio": 14000,
+      "costo": 11500,
+      "stock": 30,
+      "minimo": 8,
+      "atajo": true,
+      "activo": true
+    },
+    {
+      "id": 5,
+      "codigo": "7701005",
+      "nombre": "Bulto Maíz Duro",
+      "unidad": "Bulto",
+      "precio": 130000,
+      "costo": 112000,
+      "stock": 8,
+      "minimo": 3,
+      "atajo": true,
+      "activo": true
+    },
+    {
+      "id": 6,
+      "codigo": "7701006",
+      "nombre": "Cubeta Huevos",
+      "unidad": "Cubeta",
+      "precio": 18000,
+      "costo": 15500,
+      "stock": 15,
+      "minimo": 5,
+      "atajo": true,
+      "activo": true
+    }
+  ],
+  "ventas": [],
+  "usuarios": [
+    {
+      "id": 1,
+      "nombre": "Jenny Gómez",
+      "usuario": "jenny",
+      "clave": "7c540741",
+      "rol": "Cajero",
+      "caja": "Caja #1",
+      "activo": true
+    },
+    {
+      "id": 2,
+      "nombre": "Don Pedro",
+      "usuario": "pedro",
+      "clave": "a63f45da",
+      "rol": "Admin",
+      "caja": "Todas",
+      "activo": true
+    }
+  ]
+}
